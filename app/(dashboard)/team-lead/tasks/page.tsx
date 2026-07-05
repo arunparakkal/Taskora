@@ -1,22 +1,9 @@
-import Link from "next/link";
-import { CheckSquare, FolderKanban, Users, Calendar } from "lucide-react";
-import { PageShell, EmptyState } from "@/components/layout/dashboard-shell";
+import { CheckSquare, FolderKanban, Users } from "lucide-react";
+import { PageShell } from "@/components/layout/dashboard-shell";
 import { StatCard, StatsGrid } from "@/components/admin/stat-card";
-import { PriorityBadge, StatusBadge } from "@/components/shared/badges";
-import { EntityAvatar } from "@/components/shared/entity-avatar";
-import { DataTableCard } from "@/components/shared/data-table-card";
-import { TaskStatusSelect } from "@/components/tasks/task-status-select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { TasksView } from "@/components/tasks/tasks-view";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { getTasks, getTeamLeadTeamIds, getProjects } from "@/lib/data/queries";
-import { formatDate } from "@/lib/utils";
 
 export default async function TeamLeadTasksPage() {
   const profile = await getCurrentProfile();
@@ -70,75 +57,13 @@ export default async function TeamLeadTasksPage() {
         </StatsGrid>
       }
     >
-      {tasks.length === 0 ? (
-        <EmptyState
-          icon={CheckSquare}
-          title="No tasks"
-          description="Tasks assigned to your team will appear here."
-        />
-      ) : (
-        <DataTableCard total={tasks.length}>
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-                <TableHead>Title</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Assignee</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Update</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tasks.map((task) => (
-                <TableRow key={task.id}>
-                  <TableCell>
-                    <Link
-                      href={`/team-lead/tasks/${task.id}`}
-                      className="flex items-center gap-3 hover:text-blue-600"
-                    >
-                      <EntityAvatar name={task.title} size="sm" />
-                      <p className="font-semibold text-slate-900">{task.title}</p>
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-600">
-                    [{task.project?.key}] {task.project?.name}
-                  </TableCell>
-                  <TableCell>
-                    {task.assignee ? (
-                      <div className="flex items-center gap-2">
-                        <EntityAvatar
-                          name={task.assignee.full_name || task.assignee.email}
-                          size="sm"
-                        />
-                        <span className="text-slate-700">{task.assignee.full_name}</span>
-                      </div>
-                    ) : (
-                      <span className="text-slate-400">Unassigned</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <PriorityBadge priority={task.priority} />
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={task.status} />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1.5 text-slate-500">
-                      <Calendar className="h-4 w-4 text-slate-400" />
-                      {formatDate(task.due_date)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <TaskStatusSelect taskId={task.id} currentStatus={task.status} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </DataTableCard>
-      )}
+      <TasksView
+        tasks={tasks}
+        role="team_lead"
+        viewStorageKey="taskora-team-lead-tasks-view"
+        emptyTitle="No tasks"
+        emptyDescription="Tasks assigned to your team will appear here."
+      />
     </PageShell>
   );
 }

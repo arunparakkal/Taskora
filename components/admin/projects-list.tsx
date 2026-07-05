@@ -11,6 +11,7 @@ export function ProjectsList({ projects }: { projects: ProjectWithDetails[] }) {
       viewStorageKey="taskora-projects-view-admin"
       emptyTitle="No projects yet"
       emptyDescription="Create a project and link it to a team to start tracking work."
+      adminMode
     />
   );
 }

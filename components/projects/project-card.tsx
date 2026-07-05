@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { Calendar, ChevronRight, ListTodo, UsersRound } from "lucide-react";
+import { ProjectActionsMenu } from "@/components/admin/project-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
+import { ProjectProgressBar } from "@/components/projects/project-progress-bar";
+import { PROJECT_STATUS_LABELS } from "@/lib/projects/status";
 import { formatDate } from "@/lib/utils";
 import type { ProjectWithDetails } from "@/types/database";
 
@@ -11,11 +14,15 @@ export function ProjectCard({
   project,
   detailHref,
   myTaskCount,
+  adminMode = false,
 }: {
   project: ProjectWithDetails;
   detailHref: string;
   myTaskCount?: number;
+  adminMode?: boolean;
 }) {
+  const rate = project.completion_rate ?? 0;
+
   return (
     <Card className="group flex h-full flex-col border-slate-200 shadow-sm transition-shadow hover:shadow-md">
       <Link href={detailHref} className="flex flex-1 flex-col p-5">
@@ -37,7 +44,17 @@ export function ProjectCard({
           <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs font-semibold text-slate-700">
             {project.key}
           </span>
-          <Badge variant={project.status}>{project.status}</Badge>
+          <Badge variant={project.status}>
+            {PROJECT_STATUS_LABELS[project.status]}
+          </Badge>
+        </div>
+
+        <div className="mt-4">
+          <ProjectProgressBar
+            rate={rate}
+            done={project.done_count}
+            total={project.task_count}
+          />
         </div>
 
         <div className="mt-4 space-y-2 text-sm text-slate-600">
@@ -66,18 +83,25 @@ export function ProjectCard({
         </div>
       </Link>
 
-      <div className="border-t border-slate-100 px-5 py-3">
+      <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-5 py-3">
         <Button
           variant="ghost"
           size="sm"
-          className="h-auto w-full justify-between p-0 text-sm font-medium text-blue-600 hover:bg-transparent hover:text-blue-700"
+          className="h-auto gap-1 p-0 text-sm font-medium text-blue-600 hover:bg-transparent hover:text-blue-700"
           asChild
         >
           <Link href={detailHref}>
-            View details
+            View
             <ChevronRight className="h-4 w-4" />
           </Link>
         </Button>
+        {adminMode && (
+          <ProjectActionsMenu
+            projectId={project.id}
+            projectName={project.name}
+            status={project.status}
+          />
+        )}
       </div>
     </Card>
   );

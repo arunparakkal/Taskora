@@ -142,6 +142,12 @@ export const reviewTaskSchema = z.object({
     .or(z.literal("")),
 });
 
+export const updateProjectStatusSchema = z.object({
+  status: z.enum(["active", "paused", "archived"], {
+    message: "Invalid project status",
+  }),
+});
+
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 export type CreateTeamInput = z.infer<typeof createTeamSchema>;

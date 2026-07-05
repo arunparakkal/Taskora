@@ -64,7 +64,8 @@ export default async function TeamLeadProjectDetailPage({
   const summary = buildProjectSummary(tasks);
   const projectOpenForTasks = isProjectOpenForNewTasks(
     project.start_date,
-    project.due_date
+    project.due_date,
+    project.status
   );
 
   return (
@@ -95,6 +96,11 @@ export default async function TeamLeadProjectDetailPage({
       </div>
 
       <div className="mb-8 space-y-6">
+        {project.status === "paused" && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            This project is paused. No new tasks can be added until an admin resumes it.
+          </div>
+        )}
         <ProjectInfoCard project={project} teamMembers={teamMembers} />
         <ProjectSummaryCard summary={summary} />
       </div>

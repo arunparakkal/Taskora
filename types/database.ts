@@ -1,7 +1,7 @@
 export type AppRole = "admin" | "team_lead" | "member";
 export type TaskStatus = "todo" | "in_progress" | "review" | "rework" | "done";
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
-export type ProjectStatus = "active" | "archived";
+export type ProjectStatus = "active" | "paused" | "archived";
 
 export interface Profile {
   id: string;
@@ -115,6 +115,8 @@ export interface TeamWithDetails extends Team {
 export interface ProjectWithDetails extends Project {
   team?: TeamWithDetails | null;
   task_count?: number;
+  done_count?: number;
+  completion_rate?: number;
 }
 
 export interface TaskWithDetails extends Task {

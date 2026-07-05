@@ -24,11 +24,13 @@ export function validateTaskDueDateForProject(
   return null;
 }
 
-/** Team leads can only add tasks while today falls within the project period. */
+/** Team leads can only add tasks while today falls within the project period and project is active. */
 export function isProjectOpenForNewTasks(
   startDate: string | null | undefined,
-  dueDate: string | null | undefined
+  dueDate: string | null | undefined,
+  status: "active" | "paused" | "archived" = "active"
 ): boolean {
+  if (status !== "active") return false;
   if (!startDate || !dueDate) return false;
   const today = new Date().toISOString().slice(0, 10);
   return today >= startDate && today <= dueDate;

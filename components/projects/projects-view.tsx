@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Calendar, ChevronRight, FolderKanban, Search } from "lucide-react";
+import { ProjectActionsMenu } from "@/components/admin/project-actions-menu";
 import { EmptyState } from "@/components/layout/dashboard-shell";
 import { ProjectCard } from "@/components/projects/project-card";
+import { ProjectProgressBar } from "@/components/projects/project-progress-bar";
 import { Badge } from "@/components/ui/badge";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
 import { DataTableCard } from "@/components/shared/data-table-card";
@@ -16,6 +18,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PROJECT_STATUS_LABELS } from "@/lib/projects/status";
 import {
   Table,
   TableBody,
@@ -46,6 +49,7 @@ export function ProjectsView({
   emptyTitle = "No projects yet",
   emptyDescription = "Projects will appear here once they are created.",
   myTaskCounts,
+  adminMode = false,
 }: {
   projects: ProjectWithDetails[];
   detailPathPrefix: string;
@@ -54,6 +58,7 @@ export function ProjectsView({
   emptyTitle?: string;
   emptyDescription?: string;
   myTaskCounts?: Record<string, number>;
+  adminMode?: boolean;
 }) {
   const searchParams = useSearchParams();
   const initialQ = searchParams.get("q") ?? "";
@@ -128,6 +133,7 @@ export function ProjectsView({
                 project={project}
                 detailHref={`${detailPathPrefix}/${project.id}`}
                 myTaskCount={myTaskCounts?.[project.id]}
+                adminMode={adminMode}
               />
             ))}
           </div>
@@ -141,9 +147,12 @@ export function ProjectsView({
                 <TableHead>Key</TableHead>
                 <TableHead>Team</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Progress</TableHead>
                 <TableHead>Period</TableHead>
                 <TableHead>Tasks</TableHead>
-                <TableHead className="text-right">View</TableHead>
+                <TableHead className="text-right">
+                  {adminMode ? "Actions" : "View"}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -153,6 +162,7 @@ export function ProjectsView({
                   myCount != null
                     ? `${myCount} mine`
                     : String(project.task_count ?? 0);
+                const rate = project.completion_rate ?? 0;
 
                 return (
                   <TableRow key={project.id} className="group">
@@ -183,14 +193,25 @@ export function ProjectsView({
                       {project.team?.name ?? "—"}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={project.status}>{project.status}</Badge>
+                      <Badge variant={project.status}>
+                        {PROJECT_STATUS_LABELS[project.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="min-w-[7rem]">
+                      <ProjectProgressBar
+                        rate={rate}
+                        done={project.done_count}
+                        total={project.task_count}
+                        compact
+                      />
                     </TableCell>
                     <TableCell className="text-slate-600">
                       {project.start_date && project.due_date ? (
                         <div className="flex items-center gap-1.5 text-slate-500">
                           <Calendar className="h-4 w-4 shrink-0 text-slate-400" />
                           <span className="whitespace-nowrap text-sm">
-                            {formatDate(project.start_date)} – {formatDate(project.due_date)}
+                            {formatDate(project.start_date)} –{" "}
+                            {formatDate(project.due_date)}
                           </span>
                         </div>
                       ) : (
@@ -199,16 +220,36 @@ export function ProjectsView({
                     </TableCell>
                     <TableCell className="text-slate-600">{taskLabel}</TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="link"
-                        className="h-auto gap-1 p-0 text-sm font-medium text-blue-600"
-                        asChild
-                      >
-                        <Link href={`${detailPathPrefix}/${project.id}`}>
-                          View details
-                          <ChevronRight className="h-4 w-4" />
-                        </Link>
-                      </Button>
+                      {adminMode ? (
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="link"
+                            className="h-auto gap-1 p-0 text-sm font-medium text-blue-600"
+                            asChild
+                          >
+                            <Link href={`${detailPathPrefix}/${project.id}`}>
+                              View
+                              <ChevronRight className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <ProjectActionsMenu
+                            projectId={project.id}
+                            projectName={project.name}
+                            status={project.status}
+                          />
+                        </div>
+                      ) : (
+                        <Button
+                          variant="link"
+                          className="h-auto gap-1 p-0 text-sm font-medium text-blue-600"
+                          asChild
+                        >
+                          <Link href={`${detailPathPrefix}/${project.id}`}>
+                            View
+                            <ChevronRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 );

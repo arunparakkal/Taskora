@@ -2,6 +2,7 @@ import { cache } from "react";
 import { unstable_cache, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { fetchTeamMemberProfiles } from "@/lib/data/team-members";
+import { getProjectCompletionRate } from "@/lib/projects/status";
 import type {
   Profile,
   ProjectWithDetails,
@@ -79,15 +80,27 @@ export async function getProjects(): Promise<ProjectWithDetails[]> {
 
   const withCounts = await Promise.all(
     (projects ?? []).map(async (project) => {
-      const { count } = await supabase
-        .from("tasks")
-        .select("*", { count: "exact", head: true })
-        .eq("project_id", project.id);
+      const [totalRes, doneRes] = await Promise.all([
+        supabase
+          .from("tasks")
+          .select("*", { count: "exact", head: true })
+          .eq("project_id", project.id),
+        supabase
+          .from("tasks")
+          .select("*", { count: "exact", head: true })
+          .eq("project_id", project.id)
+          .eq("status", "done"),
+      ]);
+
+      const task_count = totalRes.count ?? 0;
+      const done_count = doneRes.count ?? 0;
 
       return {
         ...project,
         team: project.team,
-        task_count: count ?? 0,
+        task_count,
+        done_count,
+        completion_rate: getProjectCompletionRate(done_count, task_count),
       };
     })
   );

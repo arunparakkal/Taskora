@@ -6,6 +6,7 @@ import {
   FolderKanban,
 } from "lucide-react";
 import { PageShell, EmptyState } from "@/components/layout/dashboard-shell";
+import { ProjectActionsMenu } from "@/components/admin/project-actions-menu";
 import { CreateTaskDialog } from "@/components/admin/create-task-dialog";
 import { StatCard, StatsGrid } from "@/components/admin/stat-card";
 import { PriorityBadge, StatusBadge } from "@/components/shared/badges";
@@ -56,11 +57,20 @@ export default async function AdminProjectDetailPage({
       title={project.name}
       description={`Project ${project.key} · ${project.team?.name ?? "Team"}`}
       action={
-        <CreateTaskDialog
-          projects={[project]}
-          users={assignableUsers}
-          defaultProjectId={project.id}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <ProjectActionsMenu
+            projectId={project.id}
+            projectName={project.name}
+            status={project.status}
+          />
+          {project.status !== "paused" && (
+            <CreateTaskDialog
+              projects={[project]}
+              users={assignableUsers}
+              defaultProjectId={project.id}
+            />
+          )}
+        </div>
       }
     >
       <div className="mb-6 flex flex-wrap items-center gap-3">
@@ -76,6 +86,11 @@ export default async function AdminProjectDetailPage({
       </div>
 
       <div className="mb-8 space-y-6">
+        {project.status === "paused" && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            This project is paused. Resume it to allow new tasks.
+          </div>
+        )}
         <ProjectInfoCard project={project} teamMembers={teamMembers} />
         <ProjectSummaryCard summary={summary} />
       </div>

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import {
   FolderKanban,
   CheckCircle2,
-  Archive,
+  Pause,
   ListTodo,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/dashboard-shell";
@@ -15,7 +15,7 @@ export default async function AdminProjectsPage() {
   const [projects, teams] = await Promise.all([getProjects(), getTeams()]);
 
   const active = projects.filter((p) => p.status === "active").length;
-  const archived = projects.filter((p) => p.status === "archived").length;
+  const paused = projects.filter((p) => p.status === "paused").length;
   const totalTasks = projects.reduce((sum, p) => sum + (p.task_count ?? 0), 0);
 
   return (
@@ -40,10 +40,10 @@ export default async function AdminProjectsPage() {
             accent="green"
           />
           <StatCard
-            label="Archived"
-            value={archived}
-            subtext="Completed or paused"
-            icon={Archive}
+            label="Paused"
+            value={paused}
+            subtext="Temporarily on hold"
+            icon={Pause}
             accent="purple"
           />
           <StatCard

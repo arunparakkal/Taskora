@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
     const { data: project } = await supabase
       .from("projects")
-      .select("team_id, start_date, due_date")
+      .select("team_id, start_date, due_date, status")
       .eq("id", project_id)
       .single();
 
@@ -59,9 +59,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
+    if (project.status === "paused") {
+      return NextResponse.json(
+        { error: "This project is paused. Resume it before adding tasks." },
+        { status: 403 }
+      );
+    }
+
+    if (project.status === "archived") {
+      return NextResponse.json(
+        { error: "This project is archived." },
+        { status: 403 }
+      );
+    }
+
     if (
       profile?.role === "team_lead" &&
-      !isProjectOpenForNewTasks(project.start_date, project.due_date)
+      !isProjectOpenForNewTasks(
+        project.start_date,
+        project.due_date,
+        project.status
+      )
     ) {
       return NextResponse.json(
         {

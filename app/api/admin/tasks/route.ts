@@ -39,12 +39,19 @@ export async function POST(request: Request) {
 
     const { data: project } = await supabase
       .from("projects")
-      .select("start_date, due_date")
+      .select("start_date, due_date, status")
       .eq("id", project_id)
       .single();
 
     if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    if (project.status === "paused") {
+      return NextResponse.json(
+        { error: "This project is paused. Resume it before adding tasks." },
+        { status: 403 }
+      );
     }
 
     const dateError = validateTaskDueDateForProject(

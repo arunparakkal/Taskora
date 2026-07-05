@@ -2,6 +2,7 @@ import { Calendar, Crown, UsersRound } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
+import { PROJECT_STATUS_LABELS } from "@/lib/projects/status";
 import { formatDate } from "@/lib/utils";
 import type { Profile, ProjectWithDetails } from "@/types/database";
 
@@ -54,7 +55,9 @@ export function ProjectInfoCard({
                 <span className="rounded-md bg-slate-100 px-2.5 py-1 font-mono text-xs font-medium text-slate-600">
                   {project.key}
                 </span>
-                <Badge variant={project.status}>{project.status}</Badge>
+                <Badge variant={project.status}>
+                  {PROJECT_STATUS_LABELS[project.status]}
+                </Badge>
               </div>
             </div>
           </div>

@@ -63,7 +63,7 @@ export default async function MemberProjectsPage() {
     >
       <Suspense fallback={null}>
         <ProjectsView
-          projects={projects}
+          projects={projects.filter((p) => p.status !== "archived")}
           detailPathPrefix="/member/projects"
           viewStorageKey="taskora-projects-view-member"
           searchPlaceholder="Search your projects..."

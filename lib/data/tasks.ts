@@ -5,10 +5,15 @@ import type {
   TaskWithDetails,
   TeamWithDetails,
 } from "@/types/database";
+import type { ActivityFeedItem } from "@/lib/activity/types";
+
+export type { ActivityFeedItem } from "@/lib/activity/types";
 
 export interface TaskActivityWithActor extends TaskActivity {
   actor?: Pick<Profile, "full_name" | "email"> | null;
 }
+
+export type ProjectActivityItem = ActivityFeedItem;
 
 export interface TaskDetail extends TaskWithDetails {
   creator?: Profile | null;
@@ -68,4 +73,12 @@ export async function getTaskActivity(
 
   if (error) throw error;
   return (data ?? []) as TaskActivityWithActor[];
+}
+
+export async function getProjectTaskActivity(
+  projectId: string,
+  limit = 10
+): Promise<ProjectActivityItem[]> {
+  const { getProjectActivityFeed } = await import("@/lib/data/activity-feed");
+  return getProjectActivityFeed(projectId, limit);
 }

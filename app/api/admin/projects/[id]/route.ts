@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { updateProjectStatusSchema } from "@/lib/validations/schemas";
+import { logActivityEvent } from "@/lib/activity/log-event";
+import { projectStatusDetail } from "@/lib/activity/build-feed";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -22,7 +24,7 @@ async function requireAdmin() {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
 
-  return { supabase };
+  return { supabase, user };
 }
 
 export async function PATCH(
@@ -33,7 +35,7 @@ export async function PATCH(
     const { id: projectId } = await params;
     const auth = await requireAdmin();
     if ("error" in auth && auth.error) return auth.error;
-    const { supabase } = auth;
+    const { supabase, user } = auth;
 
     const body = await request.json();
     const parsed = updateProjectStatusSchema.safeParse(body);
@@ -47,7 +49,7 @@ export async function PATCH(
 
     const { data: project, error: fetchError } = await supabase
       .from("projects")
-      .select("id, name, status")
+      .select("id, name, status, team_id")
       .eq("id", projectId)
       .single();
 
@@ -66,6 +68,18 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
+    if (project.status !== parsed.data.status) {
+      await logActivityEvent(supabase, {
+        eventType: "project_status_changed",
+        actorId: user.id,
+        teamId: project.team_id,
+        projectId: project.id,
+        summary: `Project "${project.name}" status changed`,
+        detail: projectStatusDetail(project.status, parsed.data.status),
+        metadata: { from: project.status, to: parsed.data.status },
+      });
+    }
+
     return NextResponse.json({ success: true, project: data });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -80,7 +94,7 @@ export async function DELETE(
     const { id: projectId } = await params;
     const auth = await requireAdmin();
     if ("error" in auth && auth.error) return auth.error;
-    const { supabase } = auth;
+    const { supabase, user } = auth;
 
     const { data: project, error: fetchError } = await supabase
       .from("projects")

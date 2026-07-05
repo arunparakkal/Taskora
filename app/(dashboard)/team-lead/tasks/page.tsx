@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CheckSquare, FolderKanban, Users, Calendar } from "lucide-react";
 import { PageShell, EmptyState } from "@/components/layout/dashboard-shell";
 import { StatCard, StatsGrid } from "@/components/admin/stat-card";
@@ -93,10 +94,13 @@ export default async function TeamLeadTasksPage() {
               {tasks.map((task) => (
                 <TableRow key={task.id}>
                   <TableCell>
-                    <div className="flex items-center gap-3">
+                    <Link
+                      href={`/team-lead/tasks/${task.id}`}
+                      className="flex items-center gap-3 hover:text-blue-600"
+                    >
                       <EntityAvatar name={task.title} size="sm" />
                       <p className="font-semibold text-slate-900">{task.title}</p>
-                    </div>
+                    </Link>
                   </TableCell>
                   <TableCell className="text-sm text-slate-600">
                     [{task.project?.key}] {task.project?.name}

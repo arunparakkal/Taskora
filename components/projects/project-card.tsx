@@ -83,24 +83,26 @@ export function ProjectCard({
         </div>
       </Link>
 
-      <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-5 py-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-auto gap-1 p-0 text-sm font-medium text-blue-600 hover:bg-transparent hover:text-blue-700"
-          asChild
-        >
-          <Link href={detailHref}>
-            View
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-        </Button>
-        {adminMode && (
+      <div className="flex items-center justify-end gap-1 border-t border-slate-100 px-5 py-3">
+        {adminMode ? (
           <ProjectActionsMenu
             projectId={project.id}
             projectName={project.name}
             status={project.status}
+            detailHref={detailHref}
           />
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-auto gap-1 p-0 text-sm font-medium text-blue-600 hover:bg-transparent hover:text-blue-700"
+            asChild
+          >
+            <Link href={detailHref}>
+              View
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </Button>
         )}
       </div>
     </Card>

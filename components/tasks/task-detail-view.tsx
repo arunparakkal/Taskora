@@ -191,10 +191,14 @@ export function TaskDetailView({
   task,
   activity,
   backHref = "/member/tasks",
+  variant = "member",
+  statusDisabled = false,
 }: {
   task: TaskDetail;
   activity: TaskActivityWithActor[];
   backHref?: string;
+  variant?: "member" | "team_lead";
+  statusDisabled?: boolean;
 }) {
   const dueInfo = getDueDateInfo(task.due_date, task.status);
   const ageDays = getTaskAgeDays(task.created_at);
@@ -202,6 +206,7 @@ export function TaskDetailView({
     task.status === "rework" ? getLatestReworkFromActivity(activity) : null;
   const guide = MEMBER_STATUS_GUIDE[task.status];
   const showReworkHint = task.status === "rework";
+  const isTeamLead = variant === "team_lead";
   const project = task.project;
   const teamLead = project?.team?.lead ?? null;
 
@@ -237,7 +242,10 @@ export function TaskDetailView({
                       {task.title}
                     </CardTitle>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <StatusBadge status={task.status} audience="member" />
+                      <StatusBadge
+                        status={task.status}
+                        audience={isTeamLead ? undefined : "member"}
+                      />
                       <PriorityBadge priority={task.priority} />
                       {dueInfo.status === "overdue" && (
                         <Badge variant="urgent" className="gap-1">
@@ -255,7 +263,8 @@ export function TaskDetailView({
                   <TaskStatusSelect
                     taskId={task.id}
                     currentStatus={task.status}
-                    mode="member"
+                    mode={isTeamLead ? "full" : "member"}
+                    disabled={statusDisabled}
                   />
                 </div>
               </div>
@@ -271,6 +280,7 @@ export function TaskDetailView({
                 </p>
               </div>
 
+              {!isTeamLead && (
               <div
                 className={cn(
                   "rounded-xl border p-4",
@@ -306,6 +316,7 @@ export function TaskDetailView({
                   </div>
                 </div>
               </div>
+              )}
             </CardContent>
           </Card>
 

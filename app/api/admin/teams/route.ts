@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createTeamSchema } from "@/lib/validations/schemas";
+import { logActivityEvent } from "@/lib/activity/log-event";
 
 export async function POST(request: Request) {
   try {
@@ -64,6 +65,13 @@ export async function POST(request: Request) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+
+    await logActivityEvent(supabase, {
+      eventType: "team_created",
+      actorId: user.id,
+      teamId: data.id,
+      summary: `Team "${data.name}" created`,
+    });
 
     return NextResponse.json({ success: true, team: data });
   } catch {

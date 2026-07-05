@@ -148,6 +148,40 @@ export const updateProjectStatusSchema = z.object({
   }),
 });
 
+export const teamLeadArchiveProjectSchema = z.object({
+  action: z.literal("archive"),
+});
+
+export const updateProjectSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, "Project name must be at least 2 characters")
+      .max(80, "Project name must be at most 80 characters")
+      .optional(),
+    description: optionalText(500, "Description"),
+    start_date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid start date")
+      .optional()
+      .or(z.literal("")),
+    due_date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid due date")
+      .optional()
+      .or(z.literal("")),
+  })
+  .refine(
+    (data) => {
+      if (data.start_date && data.due_date) {
+        return data.start_date <= data.due_date;
+      }
+      return true;
+    },
+    { message: "Due date must be on or after start date", path: ["due_date"] }
+  );
+
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 export type CreateTeamInput = z.infer<typeof createTeamSchema>;

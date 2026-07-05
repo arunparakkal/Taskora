@@ -1,19 +1,16 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import {
-  ArrowLeft,
-  CheckSquare,
-  FolderKanban,
-} from "lucide-react";
+import { ArrowLeft, CheckSquare, FolderKanban } from "lucide-react";
 import { PageShell, EmptyState } from "@/components/layout/dashboard-shell";
+import { ArchivedProjectNotice } from "@/components/projects/archived-project-notice";
 import { CreateTeamLeadTaskDialog } from "@/components/team-lead/create-task-dialog";
 import { StatCard, StatsGrid } from "@/components/admin/stat-card";
 import { PriorityBadge, StatusBadge } from "@/components/shared/badges";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
 import { DataTableCard } from "@/components/shared/data-table-card";
+import { ProjectRecentActivity } from "@/components/projects/project-recent-activity";
 import { ProjectInfoCard } from "@/components/projects/project-info-card";
 import { ProjectSummaryCard } from "@/components/projects/project-summary-card";
-import { TaskStatusSelect } from "@/components/tasks/task-status-select";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -24,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
-import { getTeamLeadTeamIds } from "@/lib/data/queries";
+import { getLedTeamIds } from "@/lib/data/team-lead";
 import {
   getProjectById,
   getProjectTasks,
@@ -32,6 +29,7 @@ import {
   getTeamMemberWorkloads,
   userLeadsProjectTeam,
 } from "@/lib/data/team-lead";
+import { getProjectTaskActivity } from "@/lib/data/tasks";
 import { buildProjectSummary } from "@/lib/projects/summary";
 import { isProjectOpenForNewTasks } from "@/lib/projects/date-utils";
 import { formatDate } from "@/lib/utils";
@@ -45,35 +43,40 @@ export default async function TeamLeadProjectDetailPage({
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
 
-  const [project, tasks, teamIds] = await Promise.all([
+  const [project, tasks, ledTeamIds] = await Promise.all([
     getProjectById(id),
     getProjectTasks(id),
-    getTeamLeadTeamIds(profile.id),
+    getLedTeamIds(profile.id),
   ]);
 
-  if (!project || !teamIds.includes(project.team_id)) {
+  if (!project || !ledTeamIds.includes(project.team_id)) {
     notFound();
   }
 
-  const [teamMembers, canManageTasks, memberWorkloads] = await Promise.all([
+  const [teamMembers, canManageTasks, memberWorkloads, recentActivity] =
+    await Promise.all([
     getTeamMembersForProject(project.team_id),
     userLeadsProjectTeam(profile.id, project.id),
     getTeamMemberWorkloads(project.team_id),
+    getProjectTaskActivity(id, 10),
   ]);
 
+  const isArchived = project.status === "archived";
   const summary = buildProjectSummary(tasks);
-  const projectOpenForTasks = isProjectOpenForNewTasks(
-    project.start_date,
-    project.due_date,
-    project.status
-  );
+  const projectOpenForTasks =
+    !isArchived &&
+    isProjectOpenForNewTasks(
+      project.start_date,
+      project.due_date,
+      project.status
+    );
 
   return (
     <PageShell
       title={project.name}
       description={`Project ${project.key} · ${project.team?.name ?? "Team"}`}
       action={
-        canManageTasks ? (
+        canManageTasks && !isArchived ? (
           <CreateTeamLeadTaskDialog
             projectId={project.id}
             projectName={project.name}
@@ -90,19 +93,21 @@ export default async function TeamLeadProjectDetailPage({
         <Button variant="outline" size="sm" className="gap-2 border-slate-200" asChild>
           <Link href="/team-lead/projects">
             <ArrowLeft className="h-4 w-4" />
-            Back to My Projects
+            Back to Projects
           </Link>
         </Button>
       </div>
 
       <div className="mb-8 space-y-6">
-        {project.status === "paused" && (
+        {isArchived && <ArchivedProjectNotice />}
+        {!isArchived && project.status === "paused" && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             This project is paused. No new tasks can be added until an admin resumes it.
           </div>
         )}
         <ProjectInfoCard project={project} teamMembers={teamMembers} />
         <ProjectSummaryCard summary={summary} />
+        <ProjectRecentActivity activity={recentActivity} />
       </div>
 
       <StatsGrid>
@@ -143,7 +148,7 @@ export default async function TeamLeadProjectDetailPage({
             icon={CheckSquare}
             title="No tasks yet"
             description={
-              canManageTasks
+              canManageTasks && !isArchived
                 ? "Add a task and assign it to a team member."
                 : "Tasks for this project will appear here."
             }
@@ -158,21 +163,23 @@ export default async function TeamLeadProjectDetailPage({
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Due date</TableHead>
-                  <TableHead>Update</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {tasks.map((task) => (
                   <TableRow key={task.id}>
                     <TableCell>
-                      <div>
+                      <Link
+                        href={`/team-lead/tasks/${task.id}`}
+                        className="block hover:text-blue-600"
+                      >
                         <p className="font-semibold text-slate-900">{task.title}</p>
                         {task.description && (
-                          <p className="text-xs text-slate-500 line-clamp-1">
+                          <p className="line-clamp-1 text-xs text-slate-500">
                             {task.description}
                           </p>
                         )}
-                      </div>
+                      </Link>
                     </TableCell>
                     <TableCell>
                       {task.assignee ? (
@@ -203,9 +210,6 @@ export default async function TeamLeadProjectDetailPage({
                     </TableCell>
                     <TableCell className="text-slate-500">
                       {formatDate(task.due_date)}
-                    </TableCell>
-                    <TableCell>
-                      <TaskStatusSelect taskId={task.id} currentStatus={task.status} />
                     </TableCell>
                   </TableRow>
                 ))}

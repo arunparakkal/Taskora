@@ -6,6 +6,7 @@ import {
   validateTaskDueDateForProject,
 } from "@/lib/projects/date-utils";
 import { createTaskSchema } from "@/lib/validations/schemas";
+import { logActivityEvent } from "@/lib/activity/log-event";
 
 export async function POST(request: Request) {
   try {
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
 
     const { data: project } = await supabase
       .from("projects")
-      .select("team_id, start_date, due_date, status")
+      .select("team_id, start_date, due_date, status, name")
       .eq("id", project_id)
       .single();
 
@@ -126,6 +127,16 @@ export async function POST(request: Request) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+
+    await logActivityEvent(supabase, {
+      eventType: "task_created",
+      actorId: user.id,
+      teamId: project.team_id,
+      projectId: project_id,
+      taskId: data.id,
+      summary: `Task "${title}" created`,
+      detail: project.name ? `In ${project.name}` : undefined,
+    });
 
     return NextResponse.json({ success: true, task: data });
   } catch {

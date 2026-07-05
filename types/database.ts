@@ -119,6 +119,11 @@ export interface ProjectWithDetails extends Project {
   completion_rate?: number;
 }
 
+export interface TeamLeadProjectItem extends ProjectWithDetails {
+  members: Profile[];
+  last_updated: string;
+}
+
 export interface TaskWithDetails extends Task {
   project?: Project | null;
   assignee?: Profile | null;

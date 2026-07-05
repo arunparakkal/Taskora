@@ -6,6 +6,7 @@ import {
   FolderKanban,
 } from "lucide-react";
 import { PageShell, EmptyState } from "@/components/layout/dashboard-shell";
+import { ArchivedProjectNotice } from "@/components/projects/archived-project-notice";
 import { ProjectActionsMenu } from "@/components/admin/project-actions-menu";
 import { CreateTaskDialog } from "@/components/admin/create-task-dialog";
 import { StatCard, StatsGrid } from "@/components/admin/stat-card";
@@ -52,6 +53,8 @@ export default async function AdminProjectDetailPage({
   const summary = buildProjectSummary(tasks);
   const assignableUsers = users.filter((u) => u.role !== "admin");
 
+  const isArchived = project.status === "archived";
+
   return (
     <PageShell
       title={project.name}
@@ -63,7 +66,7 @@ export default async function AdminProjectDetailPage({
             projectName={project.name}
             status={project.status}
           />
-          {project.status !== "paused" && (
+          {project.status === "active" && (
             <CreateTaskDialog
               projects={[project]}
               users={assignableUsers}
@@ -86,7 +89,8 @@ export default async function AdminProjectDetailPage({
       </div>
 
       <div className="mb-8 space-y-6">
-        {project.status === "paused" && (
+        {isArchived && <ArchivedProjectNotice adminCanRestore />}
+        {!isArchived && project.status === "paused" && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             This project is paused. Resume it to allow new tasks.
           </div>
@@ -144,7 +148,7 @@ export default async function AdminProjectDetailPage({
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Due date</TableHead>
-                  <TableHead>Update</TableHead>
+                {isArchived ? null : <TableHead>Update</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -190,12 +194,14 @@ export default async function AdminProjectDetailPage({
                     <TableCell className="text-slate-500">
                       {formatDate(task.due_date)}
                     </TableCell>
-                    <TableCell>
-                      <TaskStatusSelect
-                        taskId={task.id}
-                        currentStatus={task.status}
-                      />
-                    </TableCell>
+                    {!isArchived && (
+                      <TableCell>
+                        <TaskStatusSelect
+                          taskId={task.id}
+                          currentStatus={task.status}
+                        />
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

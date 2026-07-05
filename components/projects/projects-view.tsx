@@ -221,23 +221,12 @@ export function ProjectsView({
                     <TableCell className="text-slate-600">{taskLabel}</TableCell>
                     <TableCell className="text-right">
                       {adminMode ? (
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="link"
-                            className="h-auto gap-1 p-0 text-sm font-medium text-blue-600"
-                            asChild
-                          >
-                            <Link href={`${detailPathPrefix}/${project.id}`}>
-                              View
-                              <ChevronRight className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                          <ProjectActionsMenu
-                            projectId={project.id}
-                            projectName={project.name}
-                            status={project.status}
-                          />
-                        </div>
+                        <ProjectActionsMenu
+                          projectId={project.id}
+                          projectName={project.name}
+                          status={project.status}
+                          detailHref={`${detailPathPrefix}/${project.id}`}
+                        />
                       ) : (
                         <Button
                           variant="link"

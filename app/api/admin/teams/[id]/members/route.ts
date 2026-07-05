@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { logActivityEvent } from "@/lib/activity/log-event";
 
 export async function POST(
   request: Request,
@@ -55,6 +56,25 @@ export async function POST(
       const { error } = await supabase.from("team_members").insert(rows);
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+
+      for (const memberId of memberIds) {
+        const { data: memberProfile } = await supabase
+          .from("profiles")
+          .select("full_name, email")
+          .eq("id", memberId)
+          .single();
+
+        await logActivityEvent(supabase, {
+          eventType: "member_added",
+          actorId: user.id,
+          teamId,
+          summary: "Member added to team",
+          detail: memberProfile
+            ? `${memberProfile.full_name || memberProfile.email} joined the team`
+            : undefined,
+          metadata: { user_id: memberId },
+        });
       }
     }
 

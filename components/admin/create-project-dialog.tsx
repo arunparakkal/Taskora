@@ -11,6 +11,7 @@ import {
   FileText,
   UsersRound,
   FolderPlus,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,7 +65,7 @@ export function CreateProjectDialog({ teams }: { teams: TeamWithDetails[] }) {
 
   function handleClose() {
     setOpen(false);
-    reset({ name: "", key: "", description: "", team_id: "" });
+    reset({ name: "", key: "", description: "", team_id: "", start_date: "", due_date: "" });
     setTeamValue("");
   }
 
@@ -100,7 +101,7 @@ export function CreateProjectDialog({ teams }: { teams: TeamWithDetails[] }) {
       open={open}
       onOpenChange={(nextOpen) => {
         if (nextOpen) {
-          reset({ name: "", key: "", description: "", team_id: "" });
+          reset({ name: "", key: "", description: "", team_id: "", start_date: "", due_date: "" });
           setTeamValue("");
         }
         setOpen(nextOpen);
@@ -170,6 +171,35 @@ export function CreateProjectDialog({ teams }: { teams: TeamWithDetails[] }) {
               </IconSelectTrigger>
               <FormFieldError message={errors.team_id?.message} />
             </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <RequiredLabel htmlFor="project_start_date">Start Date</RequiredLabel>
+                <IconInput
+                  id="project_start_date"
+                  icon={Calendar}
+                  type="date"
+                  {...register("start_date")}
+                  className={fieldClass(!!errors.start_date)}
+                  aria-invalid={!!errors.start_date}
+                />
+                <FormFieldError message={errors.start_date?.message} />
+              </div>
+              <div className="space-y-2">
+                <RequiredLabel htmlFor="project_due_date">Due Date</RequiredLabel>
+                <IconInput
+                  id="project_due_date"
+                  icon={Calendar}
+                  type="date"
+                  {...register("due_date")}
+                  className={fieldClass(!!errors.due_date)}
+                  aria-invalid={!!errors.due_date}
+                />
+                <FormFieldError message={errors.due_date?.message} />
+              </div>
+            </div>
+            <p className="text-xs text-slate-400">
+              Team leads can only assign task due dates within this project period.
+            </p>
             <div className="space-y-2">
               <RequiredLabel htmlFor="project_description" optional>
                 Description

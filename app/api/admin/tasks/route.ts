@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { validateTaskDueDateForProject } from "@/lib/projects/date-utils";
 import { createTaskSchema, updateTaskStatusSchema } from "@/lib/validations/schemas";
 
 export async function POST(request: Request) {
@@ -35,6 +36,25 @@ export async function POST(request: Request) {
 
     const { title, description, project_id, assignee_id, priority, due_date } =
       parsed.data;
+
+    const { data: project } = await supabase
+      .from("projects")
+      .select("start_date, due_date")
+      .eq("id", project_id)
+      .single();
+
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    const dateError = validateTaskDueDateForProject(
+      due_date,
+      project.start_date,
+      project.due_date
+    );
+    if (dateError) {
+      return NextResponse.json({ error: dateError }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from("tasks")

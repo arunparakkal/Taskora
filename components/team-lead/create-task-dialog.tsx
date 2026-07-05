@@ -39,6 +39,7 @@ import {
 } from "@/components/shared/form-dialog-parts";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
 import { createTaskSchema, type CreateTaskInput } from "@/lib/validations/schemas";
+import { projectPeriodLabel } from "@/lib/projects/date-utils";
 import type { Profile } from "@/types/database";
 import type { MemberWorkload } from "@/lib/workload/member-workload";
 import { WorkloadBadge } from "@/components/shared/workload-badge";
@@ -47,11 +48,17 @@ import { sortMembersByAvailability } from "@/lib/workload/member-workload";
 export function CreateTeamLeadTaskDialog({
   projectId,
   projectName,
+  projectStartDate,
+  projectDueDate,
+  projectOpenForTasks = true,
   teamMembers,
   memberWorkloads = {},
 }: {
   projectId: string;
   projectName: string;
+  projectStartDate: string | null;
+  projectDueDate: string | null;
+  projectOpenForTasks?: boolean;
   teamMembers: Profile[];
   memberWorkloads?: Record<string, MemberWorkload>;
 }) {
@@ -124,6 +131,8 @@ export function CreateTeamLeadTaskDialog({
     router.refresh();
   }
 
+  const periodLabel = projectPeriodLabel(projectStartDate, projectDueDate);
+
   return (
     <Dialog
       open={open}
@@ -144,7 +153,15 @@ export function CreateTeamLeadTaskDialog({
       }}
     >
       <DialogTrigger asChild>
-        <Button className="gap-2 bg-blue-600 text-white shadow-sm hover:bg-blue-700">
+        <Button
+          className="gap-2 bg-blue-600 text-white shadow-sm hover:bg-blue-700"
+          disabled={!projectOpenForTasks}
+          title={
+            projectOpenForTasks
+              ? undefined
+              : "Tasks can only be added during the project period"
+          }
+        >
           <Plus className="h-4 w-4" />
           Add Task
         </Button>
@@ -152,9 +169,19 @@ export function CreateTeamLeadTaskDialog({
       <DialogContent className="flex max-h-[min(90dvh,720px)] flex-col overflow-hidden p-0 sm:max-w-lg">
         <DialogHeader className="shrink-0 border-b border-slate-100 px-6 py-4">
           <DialogTitle>Add Task — {projectName}</DialogTitle>
+          {periodLabel && (
+            <p className="text-xs text-slate-500">
+              Project period: {periodLabel}. Task due dates must fall within this range.
+            </p>
+          )}
         </DialogHeader>
 
-        {teamMembers.length === 0 ? (
+        {!projectOpenForTasks ? (
+          <p className="px-6 py-4 text-sm text-amber-800">
+            This project is outside its active period. Tasks can only be added between
+            the project start and due dates.
+          </p>
+        ) : teamMembers.length === 0 ? (
           <p className="px-6 py-4 text-sm text-slate-500">
             No team members found. Ask an admin to add members to your team first.
           </p>
@@ -270,10 +297,17 @@ export function CreateTeamLeadTaskDialog({
                     id="tl_due_date"
                     icon={Calendar}
                     type="date"
+                    min={projectStartDate ?? undefined}
+                    max={projectDueDate ?? undefined}
                     {...register("due_date")}
                     className={fieldClass(!!errors.due_date)}
                     aria-invalid={!!errors.due_date}
                   />
+                  {periodLabel && (
+                    <p className="text-xs text-slate-400">
+                      Must be between {projectStartDate} and {projectDueDate}
+                    </p>
+                  )}
                   <FormFieldError message={errors.due_date?.message} />
                 </div>
               </div>

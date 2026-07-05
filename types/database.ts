@@ -34,6 +34,8 @@ export interface Project {
   description: string | null;
   team_id: string;
   status: ProjectStatus;
+  start_date: string | null;
+  due_date: string | null;
   created_by: string | null;
   created_at: string;
 }

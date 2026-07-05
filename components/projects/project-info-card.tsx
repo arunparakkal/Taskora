@@ -69,7 +69,7 @@ export function ProjectInfoCard({
                 "No description provided for this project."}
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <MetaTile
               icon={UsersRound}
               label="Team"
@@ -77,6 +77,16 @@ export function ProjectInfoCard({
               subValue={
                 leadDisplayName ? `Led by ${leadDisplayName}` : undefined
               }
+            />
+            <MetaTile
+              icon={Calendar}
+              label="Start date"
+              value={formatDate(project.start_date)}
+            />
+            <MetaTile
+              icon={Calendar}
+              label="Due date"
+              value={formatDate(project.due_date)}
             />
             <MetaTile
               icon={Calendar}

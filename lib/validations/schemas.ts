@@ -69,16 +69,30 @@ export const createTeamSchema = z.object({
     .or(z.literal("")),
 });
 
-export const createProjectSchema = z.object({
-  name: z
+const isoDateSchema = (label: string) =>
+  z
     .string()
     .trim()
-    .min(2, "Project name must be at least 2 characters")
-    .max(80, "Project name must be at most 80 characters"),
-  key: z.string().trim().optional().or(z.literal("")),
-  description: optionalText(500, "Description"),
-  team_id: z.string().uuid("Please select a team"),
-});
+    .min(1, `${label} is required`)
+    .regex(/^\d{4}-\d{2}-\d{2}$/, `Enter a valid ${label.toLowerCase()}`);
+
+export const createProjectSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, "Project name must be at least 2 characters")
+      .max(80, "Project name must be at most 80 characters"),
+    key: z.string().trim().optional().or(z.literal("")),
+    description: optionalText(500, "Description"),
+    team_id: z.string().uuid("Please select a team"),
+    start_date: isoDateSchema("Start date"),
+    due_date: isoDateSchema("Due date"),
+  })
+  .refine((data) => data.start_date <= data.due_date, {
+    message: "Due date must be on or after the start date",
+    path: ["due_date"],
+  });
 
 export const createTaskSchema = z.object({
   title: z
@@ -103,13 +117,9 @@ export const createTaskSchema = z.object({
     .refine(
       (val) => {
         if (!val) return true;
-        const date = new Date(val);
-        if (Number.isNaN(date.getTime())) return false;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return date >= today;
+        return /^\d{4}-\d{2}-\d{2}$/.test(val);
       },
-      { message: "Due date cannot be in the past" }
+      { message: "Enter a valid due date" }
     ),
 });
 

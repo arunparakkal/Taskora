@@ -141,8 +141,8 @@ export function ProjectsView({
                 <TableHead>Key</TableHead>
                 <TableHead>Team</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Period</TableHead>
                 <TableHead>Tasks</TableHead>
-                <TableHead>Created</TableHead>
                 <TableHead className="text-right">View</TableHead>
               </TableRow>
             </TableHeader>
@@ -185,13 +185,19 @@ export function ProjectsView({
                     <TableCell>
                       <Badge variant={project.status}>{project.status}</Badge>
                     </TableCell>
-                    <TableCell className="text-slate-600">{taskLabel}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5 text-slate-500">
-                        <Calendar className="h-4 w-4 text-slate-400" />
-                        {formatDate(project.created_at)}
-                      </div>
+                    <TableCell className="text-slate-600">
+                      {project.start_date && project.due_date ? (
+                        <div className="flex items-center gap-1.5 text-slate-500">
+                          <Calendar className="h-4 w-4 shrink-0 text-slate-400" />
+                          <span className="whitespace-nowrap text-sm">
+                            {formatDate(project.start_date)} – {formatDate(project.due_date)}
+                          </span>
+                        </div>
+                      ) : (
+                        "—"
+                      )}
                     </TableCell>
+                    <TableCell className="text-slate-600">{taskLabel}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="link"

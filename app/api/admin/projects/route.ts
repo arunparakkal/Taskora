@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { name, description, team_id } = parsed.data;
+    const { name, description, team_id, start_date, due_date } = parsed.data;
     const key = parsed.data.key || generateProjectKey(name);
 
     const { data, error } = await supabase
@@ -44,6 +44,8 @@ export async function POST(request: Request) {
         key: key.toUpperCase(),
         description: description || null,
         team_id,
+        start_date,
+        due_date,
         created_by: user.id,
       })
       .select()

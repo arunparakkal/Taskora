@@ -33,6 +33,7 @@ import {
   userLeadsProjectTeam,
 } from "@/lib/data/team-lead";
 import { buildProjectSummary } from "@/lib/projects/summary";
+import { isProjectOpenForNewTasks } from "@/lib/projects/date-utils";
 import { formatDate } from "@/lib/utils";
 
 export default async function TeamLeadProjectDetailPage({
@@ -61,6 +62,10 @@ export default async function TeamLeadProjectDetailPage({
   ]);
 
   const summary = buildProjectSummary(tasks);
+  const projectOpenForTasks = isProjectOpenForNewTasks(
+    project.start_date,
+    project.due_date
+  );
 
   return (
     <PageShell
@@ -71,6 +76,9 @@ export default async function TeamLeadProjectDetailPage({
           <CreateTeamLeadTaskDialog
             projectId={project.id}
             projectName={project.name}
+            projectStartDate={project.start_date}
+            projectDueDate={project.due_date}
+            projectOpenForTasks={projectOpenForTasks}
             teamMembers={teamMembers}
             memberWorkloads={memberWorkloads}
           />

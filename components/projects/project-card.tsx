@@ -55,7 +55,13 @@ export function ProjectCard({
           </div>
           <div className="flex items-center gap-2 text-slate-500">
             <Calendar className="h-4 w-4 shrink-0 text-slate-400" />
-            {formatDate(project.created_at)}
+            {project.start_date && project.due_date ? (
+              <span>
+                {formatDate(project.start_date)} – {formatDate(project.due_date)}
+              </span>
+            ) : (
+              formatDate(project.created_at)
+            )}
           </div>
         </div>
       </Link>

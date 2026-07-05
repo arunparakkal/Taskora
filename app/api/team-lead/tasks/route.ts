@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isTeamMember, userLeadsProjectTeam } from "@/lib/data/team-lead";
+import {
+  isProjectOpenForNewTasks,
+  validateTaskDueDateForProject,
+} from "@/lib/projects/date-utils";
 import { createTaskSchema } from "@/lib/validations/schemas";
 
 export async function POST(request: Request) {
@@ -47,12 +51,34 @@ export async function POST(request: Request) {
 
     const { data: project } = await supabase
       .from("projects")
-      .select("team_id")
+      .select("team_id, start_date, due_date")
       .eq("id", project_id)
       .single();
 
     if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    if (
+      profile?.role === "team_lead" &&
+      !isProjectOpenForNewTasks(project.start_date, project.due_date)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Tasks can only be added during the project period (between start and due date).",
+        },
+        { status: 403 }
+      );
+    }
+
+    const dateError = validateTaskDueDateForProject(
+      due_date,
+      project.start_date,
+      project.due_date
+    );
+    if (dateError) {
+      return NextResponse.json({ error: dateError }, { status: 400 });
     }
 
     if (assignee_id) {

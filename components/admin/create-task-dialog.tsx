@@ -92,6 +92,12 @@ export function CreateTaskDialog({
   }
 
   const description = watch("description") ?? "";
+  const selectedProject = projects.find((p) => p.id === projectValue);
+  const taskDueMin = selectedProject?.start_date ?? undefined;
+  const taskDueMax = selectedProject?.due_date ?? undefined;
+  const projectPeriod = selectedProject?.start_date && selectedProject?.due_date
+    ? `${selectedProject.start_date} → ${selectedProject.due_date}`
+    : null;
 
   function handleClose() {
     setOpen(false);
@@ -188,6 +194,11 @@ export function CreateTaskDialog({
                   </Select>
                 </IconSelectTrigger>
                 <FormFieldError message={errors.project_id?.message} />
+                {projectPeriod && (
+                  <p className="text-xs text-slate-400">
+                    Project period: {projectPeriod}. Task due dates must fall within this range.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -252,10 +263,17 @@ export function CreateTaskDialog({
                     id="due_date"
                     icon={Calendar}
                     type="date"
+                    min={taskDueMin}
+                    max={taskDueMax}
                     {...register("due_date")}
                     className={fieldClass(!!errors.due_date)}
                     aria-invalid={!!errors.due_date}
                   />
+                  {taskDueMin && taskDueMax && (
+                    <p className="text-xs text-slate-400">
+                      Must be between {taskDueMin} and {taskDueMax}
+                    </p>
+                  )}
                   <FormFieldError message={errors.due_date?.message} />
                 </div>
               </div>

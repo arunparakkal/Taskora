@@ -63,7 +63,13 @@ export default async function MemberProjectDetailPage({
       </div>
 
       <div className="mb-8">
-        <ProjectInfoCard project={project} teamMembers={teamMembers} />
+        <ProjectInfoCard
+          project={project}
+          teamMembers={teamMembers}
+          memberProfileHref={(id) =>
+            id === profile.id ? "/member/profile" : undefined
+          }
+        />
       </div>
 
       <StatsGrid>

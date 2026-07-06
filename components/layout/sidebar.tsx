@@ -11,6 +11,7 @@ import {
   Gauge,
   Bell,
   History,
+  UserCircle,
 } from "lucide-react";
 import type { Profile, AppRole } from "@/types/database";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ const adminNav: NavItem[] = [
   { label: "Tasks", href: "/admin/tasks", icon: CheckSquare },
   { label: "Activity", href: "/admin/activity", icon: History },
   { label: "Performance", href: "/admin/performance", icon: Gauge },
+  { label: "My Profile", href: "/admin/profile", icon: UserCircle },
   { label: "Notifications", href: "/admin/notifications", icon: Bell },
 ];
 
@@ -56,10 +58,17 @@ const teamLeadNav: NavItem[] = [
 const memberNav: NavItem[] = [
   { label: "My Tasks", href: "/member/tasks", icon: CheckSquare },
   { label: "My Projects", href: "/member/projects", icon: FolderKanban },
+  { label: "My Profile", href: "/member/profile", icon: UserCircle },
   { label: "Activity", href: "/member/activity", icon: History },
   { label: "My Performance", href: "/member/performance", icon: Gauge },
   { label: "Notifications", href: "/member/notifications", icon: Bell },
 ];
+
+function profileHrefForRole(role: AppRole, userId: string): string {
+  if (role === "admin") return "/admin/profile";
+  if (role === "team_lead") return `/team-lead/members/${userId}`;
+  return "/member/profile";
+}
 
 function getNav(role: AppRole): NavItem[] {
   if (role === "admin") return adminNav;
@@ -143,6 +152,12 @@ export function Sidebar({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href={profileHrefForRole(profile.role, profile.id)}>
+                View profile
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <SignOutButton />

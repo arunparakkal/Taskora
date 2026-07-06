@@ -105,7 +105,11 @@ export default async function TeamLeadProjectDetailPage({
             This project is paused. No new tasks can be added until an admin resumes it.
           </div>
         )}
-        <ProjectInfoCard project={project} teamMembers={teamMembers} />
+        <ProjectInfoCard
+          project={project}
+          teamMembers={teamMembers}
+          memberProfileHref={(id) => `/team-lead/members/${id}`}
+        />
         <ProjectSummaryCard summary={summary} />
         <ProjectRecentActivity activity={recentActivity} />
       </div>

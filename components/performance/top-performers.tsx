@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
 import {
@@ -23,9 +24,11 @@ const RANK_STYLES = [
 export function TopPerformers({
   entries,
   showRole = false,
+  profileHrefPrefix,
 }: {
   entries: MemberPerformanceEntry[];
   showRole?: boolean;
+  profileHrefPrefix?: string;
 }) {
   return (
     <Card className="overflow-hidden border-slate-200 shadow-sm">
@@ -60,22 +63,44 @@ export function TopPerformers({
                     </span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-3">
-                      <EntityAvatar
-                        name={entry.profile.full_name || entry.profile.email}
-                        size="sm"
-                      />
-                      <div className="min-w-0">
-                        <p className="font-semibold text-slate-900">
-                          {entry.profile.full_name || entry.profile.email}
-                        </p>
-                        {entry.teamName && (
-                          <p className="text-xs text-slate-400">
-                            {entry.teamName}
+                    {profileHrefPrefix ? (
+                      <Link
+                        href={`${profileHrefPrefix}/${entry.profile.id}`}
+                        className="flex items-center gap-3 rounded-lg transition-colors hover:opacity-90"
+                      >
+                        <EntityAvatar
+                          name={entry.profile.full_name || entry.profile.email}
+                          size="sm"
+                        />
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-900 hover:text-blue-600">
+                            {entry.profile.full_name || entry.profile.email}
                           </p>
-                        )}
+                          {entry.teamName && (
+                            <p className="text-xs text-slate-400">
+                              {entry.teamName}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <EntityAvatar
+                          name={entry.profile.full_name || entry.profile.email}
+                          size="sm"
+                        />
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-900">
+                            {entry.profile.full_name || entry.profile.email}
+                          </p>
+                          {entry.teamName && (
+                            <p className="text-xs text-slate-400">
+                              {entry.teamName}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </TableCell>
                   {showRole && (
                     <TableCell>

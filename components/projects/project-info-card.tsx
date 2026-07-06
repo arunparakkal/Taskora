@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Calendar, Crown, UsersRound } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,9 +26,11 @@ function TeamLeadBadge() {
 export function ProjectInfoCard({
   project,
   teamMembers,
+  memberProfileHref,
 }: {
   project: ProjectWithDetails;
   teamMembers: Profile[];
+  memberProfileHref?: (memberId: string) => string | undefined;
 }) {
   const teamLead = project.team?.lead ?? null;
   const leadId = project.team?.lead_id ?? teamLead?.id;
@@ -121,24 +124,46 @@ export function ProjectInfoCard({
               <p className="mb-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">
                 Team lead
               </p>
-              <div className="flex items-center gap-3">
-                <EntityAvatar
-                  name={leadDisplayName!}
-                  size="md"
-                  className="ring-2 ring-white"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-sm font-semibold text-slate-900">
-                      {teamLead.full_name || "Unknown"}
-                    </p>
-                    <TeamLeadBadge />
-                  </div>
-                  <p className="truncate text-xs text-slate-500">
-                    {teamLead.email}
-                  </p>
-                </div>
-              </div>
+              {(() => {
+                const leadHref = memberProfileHref?.(teamLead.id);
+                const leadContent = (
+                  <>
+                    <EntityAvatar
+                      name={leadDisplayName!}
+                      size="md"
+                      className="ring-2 ring-white"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p
+                          className={
+                            leadHref
+                              ? "truncate text-sm font-semibold text-slate-900 hover:text-blue-600"
+                              : "truncate text-sm font-semibold text-slate-900"
+                          }
+                        >
+                          {teamLead.full_name || "Unknown"}
+                        </p>
+                        <TeamLeadBadge />
+                      </div>
+                      <p className="truncate text-xs text-slate-500">
+                        {teamLead.email}
+                      </p>
+                    </div>
+                  </>
+                );
+
+                return leadHref ? (
+                  <Link
+                    href={leadHref}
+                    className="flex items-center gap-3 rounded-lg transition-colors hover:opacity-90"
+                  >
+                    {leadContent}
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-3">{leadContent}</div>
+                );
+              })()}
             </div>
           )}
 
@@ -151,17 +176,37 @@ export function ProjectInfoCard({
                 {otherMembers.map((member) => {
                   const displayName =
                     member.full_name || member.email || "Unknown";
+                  const href = memberProfileHref?.(member.id);
                   return (
-                    <li key={member.id} className="flex items-center gap-3">
-                      <EntityAvatar name={displayName} size="sm" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-slate-900">
-                          {member.full_name || "Unknown"}
-                        </p>
-                        <p className="truncate text-xs text-slate-400">
-                          {member.email}
-                        </p>
-                      </div>
+                    <li key={member.id}>
+                      {href ? (
+                        <Link
+                          href={href}
+                          className="flex items-center gap-3 rounded-lg py-0.5 transition-colors hover:opacity-90"
+                        >
+                          <EntityAvatar name={displayName} size="sm" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-slate-900 hover:text-blue-600">
+                              {member.full_name || "Unknown"}
+                            </p>
+                            <p className="truncate text-xs text-slate-400">
+                              {member.email}
+                            </p>
+                          </div>
+                        </Link>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <EntityAvatar name={displayName} size="sm" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-slate-900">
+                              {member.full_name || "Unknown"}
+                            </p>
+                            <p className="truncate text-xs text-slate-400">
+                              {member.email}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </li>
                   );
                 })}

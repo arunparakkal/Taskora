@@ -75,7 +75,10 @@ export default async function TeamLeadPerformancePage({
                 Top Performers · {data.periodLabel}
               </h2>
             </div>
-            <TopPerformers entries={data.entries} />
+            <TopPerformers
+              entries={data.entries}
+              profileHrefPrefix="/team-lead/members"
+            />
           </section>
 
           <section>

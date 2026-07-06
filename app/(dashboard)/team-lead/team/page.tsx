@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   UsersRound,
   FolderKanban,
@@ -156,22 +157,25 @@ export default async function TeamLeadTeamPage() {
                               statusLabel: "Available",
                             };
                             return (
-                              <TableRow key={member.id}>
+                              <TableRow key={member.id} className="group">
                                 <TableCell>
-                                  <div className="flex items-center gap-3">
+                                  <Link
+                                    href={`/team-lead/members/${member.id}`}
+                                    className="flex items-center gap-3 rounded-lg transition-colors hover:opacity-90"
+                                  >
                                     <EntityAvatar
                                       name={member.full_name || member.email}
                                       size="sm"
                                     />
                                     <div>
-                                      <p className="font-medium text-slate-900">
+                                      <p className="font-medium text-slate-900 group-hover:text-blue-600">
                                         {member.full_name}
                                       </p>
                                       <p className="text-xs text-slate-500">
                                         {member.email}
                                       </p>
                                     </div>
-                                  </div>
+                                  </Link>
                                 </TableCell>
                                 <TableCell>
                                   <RoleBadge role={member.role} />

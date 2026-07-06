@@ -100,7 +100,11 @@ export default async function AdminPerformancePage({
                   ` · ${teamOptions.find((t) => t.id === teamId)?.name ?? "Team"}`}
               </h2>
             </div>
-            <TopPerformers entries={data.entries} showRole />
+            <TopPerformers
+              entries={data.entries}
+              showRole
+              profileHrefPrefix="/admin/users"
+            />
           </section>
 
           <section>

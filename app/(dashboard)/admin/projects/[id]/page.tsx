@@ -95,7 +95,11 @@ export default async function AdminProjectDetailPage({
             This project is paused. Resume it to allow new tasks.
           </div>
         )}
-        <ProjectInfoCard project={project} teamMembers={teamMembers} />
+        <ProjectInfoCard
+          project={project}
+          teamMembers={teamMembers}
+          memberProfileHref={(id) => `/admin/users/${id}`}
+        />
         <ProjectSummaryCard summary={summary} />
       </div>
 

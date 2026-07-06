@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { Calendar, Search, Users } from "lucide-react";
+import { Calendar, Search, Users, UserCircle } from "lucide-react";
 import { EmptyState } from "@/components/layout/dashboard-shell";
 import { DeleteUserButton } from "@/components/admin/delete-user-button";
 import { EditUserButton } from "@/components/admin/edit-user-button";
@@ -11,6 +12,7 @@ import { EntityAvatar } from "@/components/shared/entity-avatar";
 import { DataTableCard } from "@/components/shared/data-table-card";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -98,22 +100,25 @@ export function UsersList({
                 <TableHead className="hidden w-[18%] px-4 md:table-cell">
                   Created
                 </TableHead>
-                <TableHead className="w-[72px] px-4 text-right">Actions</TableHead>
+                <TableHead className="w-[120px] px-4 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="px-4">
-                    <div className="flex min-w-0 items-center gap-3">
+                    <Link
+                      href={`/admin/users/${user.id}`}
+                      className="flex min-w-0 items-center gap-3 rounded-lg transition-colors hover:opacity-90"
+                    >
                       <EntityAvatar name={user.full_name || user.email} />
                       <div className="min-w-0">
-                        <p className="truncate font-semibold text-slate-900">
+                        <p className="truncate font-semibold text-slate-900 hover:text-blue-600">
                           {user.full_name}
                         </p>
                         <p className="truncate text-xs text-slate-500">{user.email}</p>
                       </div>
-                    </div>
+                    </Link>
                   </TableCell>
                   <TableCell className="px-4">
                     <RoleBadge role={user.role} />
@@ -126,6 +131,11 @@ export function UsersList({
                   </TableCell>
                   <TableCell className="px-4 text-right">
                     <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                        <Link href={`/admin/users/${user.id}`} title="View profile">
+                          <UserCircle className="h-4 w-4" />
+                        </Link>
+                      </Button>
                       {canEditUser(user.role) && (
                         <EditUserButton user={user} />
                       )}

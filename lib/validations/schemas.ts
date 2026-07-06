@@ -64,9 +64,8 @@ export const createTeamSchema = z.object({
   description: optionalText(500, "Description"),
   lead_id: z
     .string()
-    .uuid("Invalid team lead")
-    .optional()
-    .or(z.literal("")),
+    .min(1, "Please choose a team lead")
+    .uuid("Please choose a valid team lead"),
 });
 
 const isoDateSchema = (label: string) =>
@@ -85,7 +84,10 @@ export const createProjectSchema = z
       .max(80, "Project name must be at most 80 characters"),
     key: z.string().trim().optional().or(z.literal("")),
     description: optionalText(500, "Description"),
-    team_id: z.string().uuid("Please select a team"),
+    team_id: z
+      .string()
+      .min(1, "Please choose a team")
+      .uuid("Please choose a valid team"),
     start_date: isoDateSchema("Start date"),
     due_date: isoDateSchema("Due date"),
   })
@@ -101,7 +103,10 @@ export const createTaskSchema = z.object({
     .min(2, "Title must be at least 2 characters")
     .max(120, "Title must be at most 120 characters"),
   description: optionalText(1000, "Description"),
-  project_id: z.string().uuid("Please select a project"),
+  project_id: z
+    .string()
+    .min(1, "Please choose a project")
+    .uuid("Please choose a valid project"),
   assignee_id: z
     .string()
     .uuid("Invalid assignee")

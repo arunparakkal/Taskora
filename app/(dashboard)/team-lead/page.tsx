@@ -251,9 +251,10 @@ export default async function TeamLeadDashboardPage() {
                   </div>
                   <div className="space-y-2">
                     {availability.members.slice(0, 5).map(({ profile: member, teamName, workload }) => (
-                      <div
+                      <Link
                         key={`${teamName}-${member.id}`}
-                        className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2"
+                        href={`/team-lead/members/${member.id}`}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2 transition-colors hover:border-blue-200 hover:bg-blue-50/40"
                       >
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-slate-900">
@@ -264,7 +265,7 @@ export default async function TeamLeadDashboardPage() {
                           </p>
                         </div>
                         <WorkloadBadge status={workload.status} />
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </div>

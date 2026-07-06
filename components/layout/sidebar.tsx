@@ -39,10 +39,10 @@ const adminNav: NavItem[] = [
   { label: "Teams", href: "/admin/teams", icon: UsersRound },
   { label: "Projects", href: "/admin/projects", icon: FolderKanban },
   { label: "Tasks", href: "/admin/tasks", icon: CheckSquare },
-  { label: "Activity", href: "/admin/activity", icon: History },
+  { label: "Activities", href: "/admin/activity", icon: History },
   { label: "Performance", href: "/admin/performance", icon: Gauge },
-  { label: "My Profile", href: "/admin/profile", icon: UserCircle },
   { label: "Notifications", href: "/admin/notifications", icon: Bell },
+  { label: "My Profile", href: "/admin/profile", icon: UserCircle },
 ];
 
 const teamLeadNav: NavItem[] = [
@@ -50,7 +50,7 @@ const teamLeadNav: NavItem[] = [
   { label: "Projects", href: "/team-lead/projects", icon: FolderKanban },
   { label: "Team Tasks", href: "/team-lead/tasks", icon: CheckSquare },
   { label: "My Team", href: "/team-lead/team", icon: UsersRound },
-  { label: "Activity", href: "/team-lead/activity", icon: History },
+  { label: "Activities", href: "/team-lead/activity", icon: History },
   { label: "Performance", href: "/team-lead/performance", icon: Gauge },
   { label: "Notifications", href: "/team-lead/notifications", icon: Bell },
 ];
@@ -58,10 +58,10 @@ const teamLeadNav: NavItem[] = [
 const memberNav: NavItem[] = [
   { label: "My Tasks", href: "/member/tasks", icon: CheckSquare },
   { label: "My Projects", href: "/member/projects", icon: FolderKanban },
-  { label: "My Profile", href: "/member/profile", icon: UserCircle },
-  { label: "Activity", href: "/member/activity", icon: History },
+  { label: "Activities", href: "/member/activity", icon: History },
   { label: "My Performance", href: "/member/performance", icon: Gauge },
   { label: "Notifications", href: "/member/notifications", icon: Bell },
+  { label: "My Profile", href: "/member/profile", icon: UserCircle },
 ];
 
 function profileHrefForRole(role: AppRole, userId: string): string {

@@ -14,6 +14,11 @@ import {
   calculateMemberWorkload,
   type MemberWorkload,
 } from "@/lib/workload/member-workload";
+import {
+  workloadToCapacityDisplay,
+  type CapacityDisplay,
+  type MemberLeaveStatus,
+} from "@/lib/member/profile-display";
 import type {
   Profile,
   ProjectWithDetails,
@@ -82,6 +87,10 @@ export interface MemberProfileData {
   activeTasks: TaskWithDetails[];
   completedTasks: MemberCompletedTask[];
   recentActivity: MemberActivityItem[];
+  skills: string[];
+  leaveStatus: MemberLeaveStatus;
+  capacityDisplay: CapacityDisplay;
+  averageCompletionDays: number | null;
 }
 
 function dayDiffCompleted(completedAt: string, dueDate: string): number {
@@ -100,6 +109,19 @@ function isOverdueOpen(task: TaskWithDetails): boolean {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return due < today;
+}
+
+function computeAverageCompletionDays(tasks: TaskWithDetails[]): number | null {
+  const completed = tasks.filter((t) => t.status === "done" && t.completed_at);
+  if (completed.length === 0) return null;
+
+  const totalDays = completed.reduce((sum, t) => {
+    const ms =
+      new Date(t.completed_at!).getTime() - new Date(t.created_at).getTime();
+    return sum + ms / (1000 * 60 * 60 * 24);
+  }, 0);
+
+  return Math.round((totalDays / completed.length) * 10) / 10;
 }
 
 export async function getProfileById(userId: string): Promise<Profile | null> {
@@ -315,5 +337,9 @@ export async function getMemberProfile(
     activeTasks,
     completedTasks,
     recentActivity,
+    skills: profile.skills ?? [],
+    leaveStatus: profile.leave_status ?? "active",
+    capacityDisplay: workloadToCapacityDisplay(workload.status),
+    averageCompletionDays: computeAverageCompletionDays(allTasks),
   };
 }

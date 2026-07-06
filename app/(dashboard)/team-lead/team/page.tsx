@@ -4,6 +4,7 @@ import {
   FolderKanban,
   CheckSquare,
   ListTodo,
+  ChevronRight,
 } from "lucide-react";
 import { PageShell, EmptyState } from "@/components/layout/dashboard-shell";
 import { StatCard, StatsGrid } from "@/components/admin/stat-card";
@@ -11,6 +12,7 @@ import { RoleBadge } from "@/components/shared/badges";
 import { WorkloadBadge } from "@/components/shared/workload-badge";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
 import { DataTableCard } from "@/components/shared/data-table-card";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -143,6 +145,7 @@ export default async function TeamLeadTeamPage() {
                             <TableHead className="text-right">Overdue</TableHead>
                             <TableHead>Capacity</TableHead>
                             <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Profile</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -204,6 +207,14 @@ export default async function TeamLeadTeamPage() {
                                 </TableCell>
                                 <TableCell>
                                   <WorkloadBadge status={workload.status} />
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button variant="ghost" size="sm" asChild>
+                                    <Link href={`/team-lead/members/${member.id}`}>
+                                      View
+                                      <ChevronRight className="ml-1 h-4 w-4" />
+                                    </Link>
+                                  </Button>
                                 </TableCell>
                               </TableRow>
                             );

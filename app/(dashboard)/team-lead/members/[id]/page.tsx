@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PageShell } from "@/components/layout/dashboard-shell";
-import { MemberProfileView } from "@/components/members/member-profile-view";
+import { TeamLeadMemberProfileView } from "@/components/members/team-lead-member-profile-view";
 import { PeriodFilter } from "@/components/performance/period-filter";
 import { Button } from "@/components/ui/button";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
@@ -24,7 +24,7 @@ export default async function TeamLeadMemberProfilePage({
 
   const { id } = await params;
   const sp = await searchParams;
-  const period = isPerformancePeriod(sp.period) ? sp.period : "month";
+  const period = isPerformancePeriod(sp.period) ? sp.period : "week";
 
   const canView = await teamLeadCanViewMember(profile.id, id);
   if (!canView) notFound();
@@ -35,7 +35,7 @@ export default async function TeamLeadMemberProfilePage({
   return (
     <PageShell
       title="Member profile"
-      description="Workload, tasks, and performance for this team member."
+      description="Workload, capacity, tasks, skills, and activity for this team member."
       action={<PeriodFilter current={period} />}
     >
       <Button variant="ghost" size="sm" className="mb-4 -ml-2 gap-1" asChild>
@@ -44,12 +44,7 @@ export default async function TeamLeadMemberProfilePage({
           Back to my team
         </Link>
       </Button>
-      <MemberProfileView
-        data={data}
-        projectHrefPrefix="/team-lead/projects"
-        taskHrefPrefix="/team-lead/tasks"
-        showRole={false}
-      />
+      <TeamLeadMemberProfileView data={data} />
     </PageShell>
   );
 }

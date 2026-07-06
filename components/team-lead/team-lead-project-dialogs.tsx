@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Archive, Calendar, FileText, FolderPlus, Pencil } from "lucide-react";
+import { Archive, Calendar, FileText, FolderPlus, Pencil, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,11 +13,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { FormFieldError, fieldClass } from "@/components/shared/form-field";
 import {
   FormDialogFooter,
   IconInput,
+  IconSelectTrigger,
   IconTextarea,
   RequiredLabel,
 } from "@/components/shared/form-dialog-parts";
@@ -43,16 +51,36 @@ export function CreateTeamLeadProjectDialog({
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [teamValue, setTeamValue] = useState("");
 
   const {
     register,
     handleSubmit,
+    setValue,
     reset,
     formState: { errors },
   } = useForm<CreateProjectInput>({
     resolver: zodResolver(createProjectSchema),
-    defaultValues: { team_id: teams[0]?.id ?? "" },
+    mode: "onSubmit",
+    defaultValues: {
+      name: "",
+      description: "",
+      team_id: "",
+      start_date: "",
+      due_date: "",
+    },
   });
+
+  function resetForm() {
+    reset({
+      name: "",
+      description: "",
+      team_id: "",
+      start_date: "",
+      due_date: "",
+    });
+    setTeamValue("");
+  }
 
   async function onSubmit(data: CreateProjectInput) {
     setLoading(true);
@@ -74,13 +102,19 @@ export function CreateTeamLeadProjectDialog({
       description: `${data.name} is ready.`,
       variant: "success",
     });
-    reset();
+    resetForm();
     onOpenChange(false);
     router.refresh();
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) resetForm();
+        onOpenChange(next);
+      }}
+    >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Create Project</DialogTitle>
@@ -91,7 +125,33 @@ export function CreateTeamLeadProjectDialog({
           </p>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-            <input type="hidden" {...register("team_id")} value={teams[0]?.id} />
+            <div className="space-y-2">
+              <RequiredLabel>Team</RequiredLabel>
+              <IconSelectTrigger icon={UsersRound}>
+                <Select
+                  value={teamValue}
+                  onValueChange={(v) => {
+                    setTeamValue(v);
+                    setValue("team_id", v, { shouldValidate: true });
+                  }}
+                >
+                  <SelectTrigger
+                    className={fieldClass(!!errors.team_id)}
+                    aria-invalid={!!errors.team_id}
+                  >
+                    <SelectValue placeholder="Choose a team" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {teams.map((team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </IconSelectTrigger>
+              <FormFieldError message={errors.team_id?.message} />
+            </div>
             <div className="space-y-2">
               <RequiredLabel htmlFor="tl_proj_name">Project Name</RequiredLabel>
               <IconInput

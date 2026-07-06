@@ -57,7 +57,15 @@ export function CreateProjectDialog({ teams }: { teams: TeamWithDetails[] }) {
     formState: { errors },
   } = useForm<CreateProjectInput>({
     resolver: zodResolver(createProjectSchema),
-    mode: "onBlur",
+    mode: "onSubmit",
+    defaultValues: {
+      name: "",
+      key: "",
+      description: "",
+      team_id: "",
+      start_date: "",
+      due_date: "",
+    },
   });
 
   const name = watch("name");
@@ -157,8 +165,8 @@ export function CreateProjectDialog({ teams }: { teams: TeamWithDetails[] }) {
                     setValue("team_id", v, { shouldValidate: true });
                   }}
                 >
-                  <SelectTrigger className={fieldClass(!!errors.team_id)}>
-                    <SelectValue placeholder="Select team" />
+                  <SelectTrigger className={fieldClass(!!errors.team_id)} aria-invalid={!!errors.team_id}>
+                    <SelectValue placeholder="Choose a team" />
                   </SelectTrigger>
                   <SelectContent>
                     {teams.map((team) => (

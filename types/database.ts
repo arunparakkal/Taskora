@@ -2,6 +2,7 @@ export type AppRole = "admin" | "team_lead" | "member";
 export type TaskStatus = "todo" | "in_progress" | "review" | "rework" | "done";
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 export type ProjectStatus = "active" | "paused" | "archived";
+export type MemberLeaveStatus = "active" | "on_leave" | "partial";
 
 export interface Profile {
   id: string;
@@ -9,6 +10,8 @@ export interface Profile {
   full_name: string;
   role: AppRole;
   avatar_url: string | null;
+  skills?: string[];
+  leave_status?: MemberLeaveStatus;
   created_at: string;
 }
 

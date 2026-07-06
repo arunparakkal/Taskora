@@ -338,7 +338,10 @@ function ProjectRowBody({
       )}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Meta icon={Users} label="Team">
-          <MemberAvatarStack members={project.members} />
+          <MemberAvatarStack
+            members={project.members}
+            memberHrefPrefix="/team-lead/members"
+          />
         </Meta>
         <Meta icon={FolderKanban} label="Tasks">
           {project.done_count ?? 0} / {project.task_count ?? 0} completed

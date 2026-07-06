@@ -63,16 +63,35 @@ export function TaskCard({
         <div className="mt-4 space-y-2 text-sm text-slate-600">
           {showAssignee && (
             <div className="flex items-center gap-2">
-              {task.assignee ? (
-                <>
-                  <EntityAvatar
-                    name={task.assignee.full_name || task.assignee.email}
-                    size="sm"
-                  />
-                  <span className="truncate">
-                    {task.assignee.full_name || task.assignee.email}
-                  </span>
-                </>
+              {task.assignee && task.assignee_id ? (
+                role === "team_lead" || role === "admin" ? (
+                  <Link
+                    href={
+                      role === "team_lead"
+                        ? `/team-lead/members/${task.assignee_id}`
+                        : `/admin/users/${task.assignee_id}`
+                    }
+                    className="flex min-w-0 items-center gap-2 hover:text-blue-600"
+                  >
+                    <EntityAvatar
+                      name={task.assignee.full_name || task.assignee.email}
+                      size="sm"
+                    />
+                    <span className="truncate">
+                      {task.assignee.full_name || task.assignee.email}
+                    </span>
+                  </Link>
+                ) : (
+                  <>
+                    <EntityAvatar
+                      name={task.assignee.full_name || task.assignee.email}
+                      size="sm"
+                    />
+                    <span className="truncate">
+                      {task.assignee.full_name || task.assignee.email}
+                    </span>
+                  </>
+                )
               ) : (
                 <span className="text-slate-400">Unassigned</span>
               )}

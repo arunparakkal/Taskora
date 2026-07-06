@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
-import { FormFieldError } from "@/components/shared/form-field";
+import { FormFieldError, fieldClass } from "@/components/shared/form-field";
 import {
   FormDialogFooter,
   IconInput,
@@ -38,7 +38,7 @@ export function CreateTeamDialog({ users }: { users: Profile[] }) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [leadValue, setLeadValue] = useState("none");
+  const [leadValue, setLeadValue] = useState("");
 
   const {
     register,
@@ -49,7 +49,8 @@ export function CreateTeamDialog({ users }: { users: Profile[] }) {
     formState: { errors },
   } = useForm<CreateTeamInput>({
     resolver: zodResolver(createTeamSchema),
-    mode: "onBlur",
+    mode: "onSubmit",
+    defaultValues: { name: "", description: "", lead_id: "" },
   });
 
   const description = watch("description") ?? "";
@@ -58,7 +59,7 @@ export function CreateTeamDialog({ users }: { users: Profile[] }) {
   function handleClose() {
     setOpen(false);
     reset({ name: "", description: "", lead_id: "" });
-    setLeadValue("none");
+    setLeadValue("");
   }
 
   async function onSubmit(data: CreateTeamInput) {
@@ -91,7 +92,7 @@ export function CreateTeamDialog({ users }: { users: Profile[] }) {
       onOpenChange={(nextOpen) => {
         if (nextOpen) {
           reset({ name: "", description: "", lead_id: "" });
-          setLeadValue("none");
+          setLeadValue("");
         }
         setOpen(nextOpen);
       }}
@@ -134,29 +135,42 @@ export function CreateTeamDialog({ users }: { users: Profile[] }) {
             <FormFieldError message={errors.description?.message} />
           </div>
           <div className="space-y-2">
-            <RequiredLabel optional>Team Lead</RequiredLabel>
+            <RequiredLabel>Team Lead</RequiredLabel>
             <IconSelectTrigger icon={UserCircle}>
               <Select
                 value={leadValue}
                 onValueChange={(v) => {
                   setLeadValue(v);
-                  setValue("lead_id", v === "none" ? "" : v, { shouldValidate: true });
+                  setValue("lead_id", v, { shouldValidate: true });
                 }}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select team lead" />
+                <SelectTrigger
+                  className={fieldClass(!!errors.lead_id)}
+                  aria-invalid={!!errors.lead_id}
+                >
+                  <SelectValue placeholder="Choose a team lead" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {teamLeads.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.full_name || u.email}
+                  {teamLeads.length === 0 ? (
+                    <SelectItem value="unavailable" disabled>
+                      No team leads available — create a team lead user first
                     </SelectItem>
-                  ))}
+                  ) : (
+                    teamLeads.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.full_name || u.email}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </IconSelectTrigger>
             <FormFieldError message={errors.lead_id?.message} />
+            {teamLeads.length === 0 && (
+              <p className="text-xs text-amber-700">
+                Assign the team lead role to a user before creating a team.
+              </p>
+            )}
           </div>
           <FormDialogFooter
             onCancel={handleClose}

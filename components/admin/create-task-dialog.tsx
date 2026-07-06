@@ -70,11 +70,8 @@ export function CreateTaskDialog({
     formState: { errors },
   } = useForm<CreateTaskInput>({
     resolver: zodResolver(createTaskSchema),
-    defaultValues: {
-      priority: "medium",
-      project_id: initialProjectId || undefined,
-    },
-    mode: "onBlur",
+    mode: "onSubmit",
+    defaultValues: { priority: "medium", project_id: initialProjectId || "" },
   });
 
   function resetForm() {
@@ -181,8 +178,8 @@ export function CreateTaskDialog({
                       setValue("project_id", v, { shouldValidate: true });
                     }}
                   >
-                    <SelectTrigger className={fieldClass(!!errors.project_id)}>
-                      <SelectValue placeholder="Select project" />
+                    <SelectTrigger className={fieldClass(!!errors.project_id)} aria-invalid={!!errors.project_id}>
+                      <SelectValue placeholder="Choose a project" />
                     </SelectTrigger>
                     <SelectContent>
                       {projects.map((p) => (

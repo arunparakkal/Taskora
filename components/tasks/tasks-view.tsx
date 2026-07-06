@@ -49,6 +49,12 @@ function taskDetailHref(role: TaskCardRole, taskId: string) {
   return undefined;
 }
 
+function memberProfileHref(role: TaskCardRole, memberId: string) {
+  if (role === "team_lead") return `/team-lead/members/${memberId}`;
+  if (role === "admin") return `/admin/users/${memberId}`;
+  return undefined;
+}
+
 export function TasksView({
   tasks,
   role,
@@ -207,17 +213,38 @@ export function TasksView({
                     {showAssignee && (
                       <TableCell className="hidden px-4 md:table-cell">
                         {task.assignee ? (
-                          <div className="flex min-w-0 items-center gap-2">
-                            <EntityAvatar
-                              name={
-                                task.assignee.full_name || task.assignee.email
-                              }
-                              size="sm"
-                            />
-                            <span className="truncate text-slate-700">
-                              {task.assignee.full_name}
-                            </span>
-                          </div>
+                          (() => {
+                            const memberHref = memberProfileHref(
+                              role,
+                              task.assignee_id!
+                            );
+                            const content = (
+                              <>
+                                <EntityAvatar
+                                  name={
+                                    task.assignee.full_name ||
+                                    task.assignee.email
+                                  }
+                                  size="sm"
+                                />
+                                <span className="truncate text-slate-700">
+                                  {task.assignee.full_name}
+                                </span>
+                              </>
+                            );
+                            return memberHref ? (
+                              <Link
+                                href={memberHref}
+                                className="flex min-w-0 items-center gap-2 hover:text-blue-600"
+                              >
+                                {content}
+                              </Link>
+                            ) : (
+                              <div className="flex min-w-0 items-center gap-2">
+                                {content}
+                              </div>
+                            );
+                          })()
                         ) : (
                           <span className="text-slate-400">Unassigned</span>
                         )}

@@ -32,7 +32,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/team-lead/performance": "Performance",
   "/member/tasks": "My Tasks",
   "/member/projects": "My Projects",
-  "/member/activity": "Activity",
   "/member/performance": "My Performance",
   "/admin/notifications": "Notifications",
   "/team-lead/notifications": "Notifications",

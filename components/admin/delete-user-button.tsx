@@ -18,11 +18,13 @@ export function DeleteUserButton({
   userName,
   userEmail,
   isSelf,
+  onUserDeleted,
 }: {
   userId: string;
   userName: string;
   userEmail: string;
   isSelf: boolean;
+  onUserDeleted?: (userId: string) => void;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -41,6 +43,7 @@ export function DeleteUserButton({
     }
 
     toast({ title: "User deleted", variant: "success" });
+    onUserDeleted?.(userId);
     setOpen(false);
     router.refresh();
   }

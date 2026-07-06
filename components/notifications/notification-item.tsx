@@ -110,7 +110,7 @@ export function NotificationItem({
                 </span>
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-700">
-                    {isRejected ? "Reason from reviewer" : "Message"}
+                    {isRejected ? `Comment from ${actorName}` : `Message from ${actorName}`}
                   </p>
                   <p className="text-xs text-slate-400">
                     Read this before updating the task.

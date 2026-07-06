@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import type { NotificationWithDetails } from "@/lib/data/notifications";
+import { enrichNotificationActors } from "@/lib/notifications/enrich-actors";
 
 export async function GET() {
   try {
@@ -27,9 +29,12 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    const unreadCount = (data ?? []).filter((n) => !n.is_read).length;
+    const notifications = await enrichNotificationActors(
+      (data ?? []) as unknown as NotificationWithDetails[]
+    );
+    const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-    return NextResponse.json({ notifications: data ?? [], unreadCount });
+    return NextResponse.json({ notifications, unreadCount });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

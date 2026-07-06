@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { unstable_cache, revalidateTag } from "next/cache";
+import { unstable_cache, revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { fetchTeamMemberProfiles } from "@/lib/data/team-members";
 import { getProjectCompletionRate } from "@/lib/projects/status";
@@ -12,6 +12,8 @@ import type {
 
 const USER_LIST_COLUMNS =
   "id, email, full_name, role, avatar_url, created_at" as const;
+
+export { USER_LIST_COLUMNS };
 
 export const USERS_LIST_CACHE_TAG = "users-list";
 
@@ -36,6 +38,8 @@ export const getUsers = cache(async (): Promise<Profile[]> => getCachedUsersList
 
 export function revalidateUsersList() {
   revalidateTag(USERS_LIST_CACHE_TAG, "max");
+  revalidatePath("/admin/users");
+  revalidatePath("/admin");
 }
 
 export async function getTeams(): Promise<TeamWithDetails[]> {

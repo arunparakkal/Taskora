@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { enrichNotificationActors } from "@/lib/notifications/enrich-actors";
 import type { AppNotification, Profile } from "@/types/database";
 
 export interface NotificationWithDetails extends AppNotification {
@@ -36,7 +37,9 @@ export async function getMyNotifications(
     .limit(limit);
 
   if (error) throw error;
-  return (data ?? []) as unknown as NotificationWithDetails[];
+  return enrichNotificationActors(
+    (data ?? []) as unknown as NotificationWithDetails[]
+  );
 }
 
 export async function getUnreadNotificationCount(): Promise<number> {

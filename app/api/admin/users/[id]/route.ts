@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { revalidateUsersList } from "@/lib/data/queries";
+import { revalidateUsersList, USER_LIST_COLUMNS } from "@/lib/data/queries";
 import {
   updateUserRoleSchema,
   updateUserSchema,
@@ -105,10 +105,12 @@ export async function PATCH(
       );
       if (lastAdminError) return lastAdminError;
 
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from("profiles")
         .update({ role: parsed.data.role })
-        .eq("id", id);
+        .eq("id", id)
+        .select(USER_LIST_COLUMNS)
+        .single();
 
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 400 });
@@ -121,7 +123,7 @@ export async function PATCH(
       });
 
       revalidateUsersList();
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true, profile: updated });
     }
 
     const parsed = updateUserSchema.safeParse(body);
@@ -164,21 +166,23 @@ export async function PATCH(
       return NextResponse.json({ error: authError.message }, { status: 400 });
     }
 
-    const { error: profileError } = await supabase
+    const { data: updated, error: profileError } = await supabase
       .from("profiles")
       .update({
         full_name: normalizedName,
         email: normalizedEmail,
         role,
       })
-      .eq("id", id);
+      .eq("id", id)
+      .select(USER_LIST_COLUMNS)
+      .single();
 
     if (profileError) {
       return NextResponse.json({ error: profileError.message }, { status: 400 });
     }
 
     revalidateUsersList();
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, profile: updated });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

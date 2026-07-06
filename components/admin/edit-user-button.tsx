@@ -31,7 +31,13 @@ import {
 import { updateUserSchema, type UpdateUserInput } from "@/lib/validations/schemas";
 import type { AppRole, Profile } from "@/types/database";
 
-export function EditUserButton({ user }: { user: Profile }) {
+export function EditUserButton({
+  user,
+  onUserUpdated,
+}: {
+  user: Profile;
+  onUserUpdated?: (profile: Profile) => void;
+}) {
   const router = useRouter();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -87,6 +93,9 @@ export function EditUserButton({ user }: { user: Profile }) {
       description: `${data.full_name.trim()} was saved successfully.`,
       variant: "success",
     });
+    if (json.profile) {
+      onUserUpdated?.(json.profile as Profile);
+    }
     setOpen(false);
     router.refresh();
   }

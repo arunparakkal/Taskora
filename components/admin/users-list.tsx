@@ -49,17 +49,32 @@ export function UsersList({
   const searchParams = useSearchParams();
   const initialQ = searchParams.get("q") ?? "";
   const [query, setQuery] = useState(initialQ);
+  const [items, setItems] = useState(users);
+
+  useEffect(() => {
+    setItems(users);
+  }, [users]);
 
   useEffect(() => {
     setQuery(initialQ);
   }, [initialQ]);
 
+  function handleUserUpdated(updated: Profile) {
+    setItems((prev) =>
+      prev.map((u) => (u.id === updated.id ? { ...u, ...updated } : u))
+    );
+  }
+
+  function handleUserDeleted(userId: string) {
+    setItems((prev) => prev.filter((u) => u.id !== userId));
+  }
+
   const filteredUsers = useMemo(
-    () => users.filter((user) => matchesSearch(user, query)),
-    [users, query]
+    () => items.filter((user) => matchesSearch(user, query)),
+    [items, query]
   );
 
-  if (users.length === 0) {
+  if (items.length === 0) {
     return (
       <EmptyState
         icon={Users}
@@ -137,13 +152,17 @@ export function UsersList({
                         </Link>
                       </Button>
                       {canEditUser(user.role) && (
-                        <EditUserButton user={user} />
+                        <EditUserButton
+                          user={user}
+                          onUserUpdated={handleUserUpdated}
+                        />
                       )}
                       <DeleteUserButton
                         userId={user.id}
                         userName={user.full_name}
                         userEmail={user.email}
                         isSelf={user.id === currentUserId}
+                        onUserDeleted={handleUserDeleted}
                       />
                     </div>
                   </TableCell>

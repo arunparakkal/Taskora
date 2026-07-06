@@ -58,7 +58,6 @@ const teamLeadNav: NavItem[] = [
 const memberNav: NavItem[] = [
   { label: "My Tasks", href: "/member/tasks", icon: CheckSquare },
   { label: "My Projects", href: "/member/projects", icon: FolderKanban },
-  { label: "Activities", href: "/member/activity", icon: History },
   { label: "My Performance", href: "/member/performance", icon: Gauge },
   { label: "Notifications", href: "/member/notifications", icon: Bell },
   { label: "My Profile", href: "/member/profile", icon: UserCircle },

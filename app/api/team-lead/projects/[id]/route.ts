@@ -93,15 +93,17 @@ export async function PATCH(
           detail: projectStatusDetail(existingProject.status, "archived"),
         });
 
-        void notifyProjectStatusTelegram({
-          projectName: existingProject.name,
-          projectKey: existingProject.key,
-          teamId: existingProject.team_id,
-          status: "archived",
-          actorId: user.id,
-        }).catch((err) => {
+        try {
+          await notifyProjectStatusTelegram({
+            projectName: existingProject.name,
+            projectKey: existingProject.key,
+            teamId: existingProject.team_id,
+            status: "archived",
+            actorId: user.id,
+          });
+        } catch (err) {
           console.error("[telegram] project archived notify failed:", err);
-        });
+        }
       }
 
       return NextResponse.json({ success: true, project: data });

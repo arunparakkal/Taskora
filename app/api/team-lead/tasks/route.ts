@@ -140,17 +140,19 @@ export async function POST(request: Request) {
     });
 
     if (assignee_id) {
-      void notifyTaskAssignedTelegram({
-        taskTitle: title,
-        projectName: project.name,
-        projectKey: project.key,
-        priority,
-        dueDate: due_date || null,
-        assigneeId: assignee_id,
-        assignedById: user.id,
-      }).catch((err) => {
+      try {
+        await notifyTaskAssignedTelegram({
+          taskTitle: title,
+          projectName: project.name,
+          projectKey: project.key,
+          priority,
+          dueDate: due_date || null,
+          assigneeId: assignee_id,
+          assignedById: user.id,
+        });
+      } catch (err) {
         console.error("[telegram] task assigned notify failed:", err);
-      });
+      }
     }
 
     return NextResponse.json({ success: true, task: data });

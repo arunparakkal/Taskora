@@ -1,2 +1,7 @@
 {
+  "files.associations": {
+    "*.env": "dotenv",
+    "*.env.local": "dotenv",
+    "*.env.example": "dotenv"
+  }
 }

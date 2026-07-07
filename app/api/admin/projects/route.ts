@@ -66,18 +66,20 @@ export async function POST(request: Request) {
       detail: data.key,
     });
 
-    void notifyProjectCreatedTelegram({
-      projectId: data.id,
-      projectName: data.name,
-      projectKey: data.key,
-      teamId: data.team_id,
-      startDate: data.start_date,
-      dueDate: data.due_date,
-      description: data.description,
-      createdById: user.id,
-    }).catch((err) => {
+    try {
+      await notifyProjectCreatedTelegram({
+        projectId: data.id,
+        projectName: data.name,
+        projectKey: data.key,
+        teamId: data.team_id,
+        startDate: data.start_date,
+        dueDate: data.due_date,
+        description: data.description,
+        createdById: user.id,
+      });
+    } catch (err) {
       console.error("[telegram] project created notify failed:", err);
-    });
+    }
 
     return NextResponse.json({ success: true, project: data });
   } catch {

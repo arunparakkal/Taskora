@@ -84,15 +84,17 @@ export async function PATCH(
         parsed.data.status === "paused" ||
         parsed.data.status === "archived"
       ) {
-        void notifyProjectStatusTelegram({
-          projectName: project.name,
-          projectKey: project.key,
-          teamId: project.team_id,
-          status: parsed.data.status,
-          actorId: user.id,
-        }).catch((err) => {
+        try {
+          await notifyProjectStatusTelegram({
+            projectName: project.name,
+            projectKey: project.key,
+            teamId: project.team_id,
+            status: parsed.data.status,
+            actorId: user.id,
+          });
+        } catch (err) {
           console.error("[telegram] project status notify failed:", err);
-        });
+        }
       }
     }
 

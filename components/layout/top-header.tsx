@@ -9,12 +9,9 @@ import { NotificationBell } from "@/components/layout/notification-bell";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SignOutButton } from "@/components/layout/sign-out-button";
+import { AccountMenuContent } from "@/components/layout/account-menu";
 
 const PAGE_TITLES: Record<string, string> = {
   "/admin": "Dashboard",
@@ -101,15 +98,12 @@ export function TopHeader({
               </Avatar>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>
-              <p className="font-medium">{profile.full_name}</p>
-              <p className="text-xs font-normal text-slate-500">{profile.email}</p>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <SignOutButton />
-            </DropdownMenuItem>
+          <DropdownMenuContent
+            align="end"
+            sideOffset={10}
+            className="account-menu w-[332px] origin-top-right rounded-[20px] border border-[#EEF2F7] bg-white p-4 shadow-[0_24px_60px_-15px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-[var(--popover)]"
+          >
+            <AccountMenuContent profile={profile} />
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

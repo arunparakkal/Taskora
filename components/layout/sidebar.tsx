@@ -20,12 +20,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SignOutButton } from "@/components/layout/sign-out-button";
+import { AccountMenuContent } from "@/components/layout/account-menu";
 
 type NavItem = {
   label: string;
@@ -62,12 +59,6 @@ const memberNav: NavItem[] = [
   { label: "Notifications", href: "/member/notifications", icon: Bell },
   { label: "My Profile", href: "/member/profile", icon: UserCircle },
 ];
-
-function profileHrefForRole(role: AppRole, userId: string): string {
-  if (role === "admin") return "/admin/profile";
-  if (role === "team_lead") return `/team-lead/members/${userId}`;
-  return "/member/profile";
-}
 
 function getNav(role: AppRole): NavItem[] {
   if (role === "admin") return adminNav;
@@ -135,11 +126,14 @@ export function Sidebar({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-white/10">
-              <Avatar className="h-9 w-9 ring-2 ring-white/10">
-                <AvatarFallback className="bg-gradient-to-br from-[var(--sidebar-active)] to-blue-400 text-xs font-semibold text-white">
-                  {getInitials(profile.full_name || profile.email)}
-                </AvatarFallback>
-              </Avatar>
+              <span className="relative">
+                <Avatar className="h-9 w-9 ring-2 ring-white/10">
+                  <AvatarFallback className="bg-gradient-to-br from-[var(--sidebar-active)] to-blue-400 text-xs font-semibold text-white">
+                    {getInitials(profile.full_name || profile.email)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[var(--sidebar)] bg-emerald-500" />
+              </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{profile.full_name}</p>
                 <p className="truncate text-xs text-[var(--sidebar-muted)]">
@@ -149,18 +143,13 @@ export function Sidebar({
               <ChevronDown className="h-4 w-4 shrink-0 text-[var(--sidebar-muted)]" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href={profileHrefForRole(profile.role, profile.id)}>
-                View profile
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <SignOutButton />
-            </DropdownMenuItem>
+          <DropdownMenuContent
+            align="end"
+            side="top"
+            sideOffset={10}
+            className="account-menu w-[300px] rounded-[20px] border border-[#EEF2F7] bg-white p-4 shadow-[0_24px_60px_-15px_rgba(15,23,42,0.28)] dark:border-white/10 dark:bg-[var(--popover)]"
+          >
+            <AccountMenuContent profile={profile} />
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

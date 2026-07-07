@@ -20,12 +20,12 @@ function PillarRow({ label, percent }: { label: string; percent: number }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-slate-600">{label}</span>
+        <span className="font-medium text-slate-600 dark:text-slate-300">{label}</span>
         <span className={cn("font-semibold tabular-nums", style.text)}>
           {Math.round(percent)}%
         </span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
         <div
           className={cn("h-full rounded-full transition-all", style.bar)}
           style={{ width: `${Math.max(percent, 2)}%` }}
@@ -57,7 +57,7 @@ function ScoreRing({
           fill="none"
           stroke="currentColor"
           strokeWidth="10"
-          className="text-slate-100"
+          className="text-slate-100 dark:text-slate-800"
         />
         <circle
           cx="60"
@@ -73,10 +73,10 @@ function ScoreRing({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-bold tracking-tight text-slate-900">
+        <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
           {Math.round(overall)}
         </span>
-        <span className="text-xs font-medium text-slate-400">/ 100</span>
+        <span className="text-xs font-medium text-slate-400 dark:text-slate-500">/ 100</span>
       </div>
     </div>
   );
@@ -94,14 +94,14 @@ export function PerformanceCard({
   const { pillars, stats } = performance;
 
   return (
-    <Card className={cn("border-slate-200", className)}>
+    <Card className={cn("border-slate-200 dark:border-slate-800", className)}>
       <CardContent className="p-6">
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
           <div className="flex flex-col items-center gap-3">
             <ScoreRing overall={performance.overall} level={performance.level} />
             <PerformanceLevelBadge level={performance.level} />
             {periodLabel && (
-              <span className="text-xs text-slate-400">{periodLabel}</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500">{periodLabel}</span>
             )}
           </div>
 
@@ -123,7 +123,7 @@ export function PerformanceCard({
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 sm:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 dark:border-slate-800 sm:grid-cols-4">
           <Metric label="Completed" value={stats.completed} />
           <Metric label="On-time" value={`${stats.onTimeRate}%`} />
           <Metric label="First-pass" value={stats.firstPassApprovals} />
@@ -152,12 +152,12 @@ function Metric({
       <p
         className={cn(
           "text-lg font-bold tracking-tight",
-          danger ? "text-red-600" : "text-slate-900"
+          danger ? "text-red-600 dark:text-red-400" : "text-slate-900 dark:text-slate-100"
         )}
       >
         {value}
       </p>
-      <p className="text-xs text-slate-400">{label}</p>
+      <p className="text-xs text-slate-400 dark:text-slate-500">{label}</p>
     </div>
   );
 }

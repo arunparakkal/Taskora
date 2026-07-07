@@ -204,7 +204,7 @@ export function GlobalSearch() {
                   <button
                     type="button"
                     onClick={() => handleSelectResult(result)}
-                    className="flex w-full flex-col gap-0.5 px-4 py-2.5 text-left transition-colors hover:bg-slate-50"
+                    className="flex w-full flex-col gap-0.5 px-4 py-2.5 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
                   >
                     <span className="text-sm font-medium text-slate-900">
                       {result.title}

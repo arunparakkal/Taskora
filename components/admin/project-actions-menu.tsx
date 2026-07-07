@@ -198,7 +198,7 @@ export function ProjectActionsMenu({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
             <DropdownMenuItem
-              className="text-red-600 focus:bg-red-50 focus:text-red-700"
+              className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:focus:bg-red-500/15 dark:focus:text-red-300"
               onSelect={(e) => {
                 e.preventDefault();
                 setDeleteOpen(true);

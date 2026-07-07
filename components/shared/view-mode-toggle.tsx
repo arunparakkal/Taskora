@@ -17,7 +17,7 @@ export function ViewModeToggle({
   return (
     <div
       className={cn(
-        "inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1",
+        "inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-900/50",
         className
       )}
       role="group"
@@ -29,8 +29,8 @@ export function ViewModeToggle({
         className={cn(
           "inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors",
           value === "list"
-            ? "bg-white text-slate-900 shadow-sm"
-            : "text-slate-500 hover:text-slate-700"
+            ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100"
+            : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
         )}
         aria-pressed={value === "list"}
       >
@@ -43,8 +43,8 @@ export function ViewModeToggle({
         className={cn(
           "inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors",
           value === "card"
-            ? "bg-white text-slate-900 shadow-sm"
-            : "text-slate-500 hover:text-slate-700"
+            ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100"
+            : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
         )}
         aria-pressed={value === "card"}
       >

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { PageShell } from "@/components/layout/dashboard-shell";
 import { AdminProfileView } from "@/components/members/admin-profile-view";
+import { TelegramConnectCard } from "@/components/telegram/telegram-connect-card";
 import { PeriodFilter } from "@/components/performance/period-filter";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { getAdminProfile } from "@/lib/data/admin-profile";
@@ -29,7 +30,10 @@ export default async function AdminSelfProfilePage({
       description="Your administrative activity and organization overview."
       action={<PeriodFilter current={period} />}
     >
-      <AdminProfileView data={data} isSelf />
+      <div className="space-y-8">
+        <TelegramConnectCard />
+        <AdminProfileView data={data} isSelf />
+      </div>
     </PageShell>
   );
 }

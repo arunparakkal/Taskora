@@ -7,6 +7,7 @@ import {
 } from "@/lib/validations/schemas";
 import { logActivityEvent } from "@/lib/activity/log-event";
 import { projectStatusDetail } from "@/lib/activity/build-feed";
+import { notifyProjectStatusTelegram } from "@/lib/telegram/notify-project-status";
 
 async function requireProjectLead(projectId: string) {
   const supabase = await createClient();
@@ -67,7 +68,7 @@ export async function PATCH(
 
       const { data: existingProject } = await supabase
         .from("projects")
-        .select("name, status, team_id")
+        .select("name, key, status, team_id")
         .eq("id", projectId)
         .single();
 
@@ -90,6 +91,16 @@ export async function PATCH(
           projectId,
           summary: `Project "${existingProject.name}" archived`,
           detail: projectStatusDetail(existingProject.status, "archived"),
+        });
+
+        void notifyProjectStatusTelegram({
+          projectName: existingProject.name,
+          projectKey: existingProject.key,
+          teamId: existingProject.team_id,
+          status: "archived",
+          actorId: user.id,
+        }).catch((err) => {
+          console.error("[telegram] project archived notify failed:", err);
         });
       }
 
@@ -123,7 +134,10 @@ export async function PATCH(
       patch.description = parsed.data.description || null;
     }
     if (parsed.data.start_date) patch.start_date = parsed.data.start_date;
-    if (parsed.data.due_date) patch.due_date = parsed.data.due_date;
+    if (parsed.data.due_date) {
+      patch.due_date = parsed.data.due_date;
+      patch.telegram_due_reminder_sent_at = null;
+    }
 
     const { data, error } = await supabase
       .from("projects")

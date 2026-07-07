@@ -215,12 +215,14 @@ export function ProjectActionsMenu({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Archive project?</DialogTitle>
-            <DialogDescription className="space-y-2 pt-2 text-left text-sm text-slate-600">
-              <p>
-                The project will become read-only and move to Archived. No data
-                will be deleted.
-              </p>
-              <p className="font-medium text-slate-800">{projectName}</p>
+            <DialogDescription asChild>
+              <div className="space-y-2 pt-2 text-left text-sm text-slate-600">
+                <p>
+                  The project will become read-only and move to Archived. No data
+                  will be deleted.
+                </p>
+                <p className="font-medium text-slate-800">{projectName}</p>
+              </div>
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2 pt-2">

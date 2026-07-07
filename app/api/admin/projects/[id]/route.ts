@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { updateProjectStatusSchema } from "@/lib/validations/schemas";
 import { logActivityEvent } from "@/lib/activity/log-event";
 import { projectStatusDetail } from "@/lib/activity/build-feed";
+import { notifyProjectStatusTelegram } from "@/lib/telegram/notify-project-status";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -49,7 +50,7 @@ export async function PATCH(
 
     const { data: project, error: fetchError } = await supabase
       .from("projects")
-      .select("id, name, status, team_id")
+      .select("id, name, key, status, team_id")
       .eq("id", projectId)
       .single();
 
@@ -78,6 +79,21 @@ export async function PATCH(
         detail: projectStatusDetail(project.status, parsed.data.status),
         metadata: { from: project.status, to: parsed.data.status },
       });
+
+      if (
+        parsed.data.status === "paused" ||
+        parsed.data.status === "archived"
+      ) {
+        void notifyProjectStatusTelegram({
+          projectName: project.name,
+          projectKey: project.key,
+          teamId: project.team_id,
+          status: parsed.data.status,
+          actorId: user.id,
+        }).catch((err) => {
+          console.error("[telegram] project status notify failed:", err);
+        });
+      }
     }
 
     return NextResponse.json({ success: true, project: data });

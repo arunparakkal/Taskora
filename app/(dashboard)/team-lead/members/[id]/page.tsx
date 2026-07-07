@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PageShell } from "@/components/layout/dashboard-shell";
 import { TeamLeadMemberProfileView } from "@/components/members/team-lead-member-profile-view";
+import { TelegramConnectCard } from "@/components/telegram/telegram-connect-card";
 import { PeriodFilter } from "@/components/performance/period-filter";
 import { Button } from "@/components/ui/button";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
@@ -44,7 +45,10 @@ export default async function TeamLeadMemberProfilePage({
           Back to my team
         </Link>
       </Button>
-      <TeamLeadMemberProfileView data={data} />
+      <div className="space-y-8">
+        {profile.id === id && <TelegramConnectCard />}
+        <TeamLeadMemberProfileView data={data} />
+      </div>
     </PageShell>
   );
 }

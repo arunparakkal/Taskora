@@ -7,6 +7,7 @@ import {
 } from "@/lib/projects/date-utils";
 import { createTaskSchema } from "@/lib/validations/schemas";
 import { logActivityEvent } from "@/lib/activity/log-event";
+import { notifyTaskAssignedTelegram } from "@/lib/telegram/notify-task-assigned";
 
 export async function POST(request: Request) {
   try {
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
 
     const { data: project } = await supabase
       .from("projects")
-      .select("team_id, start_date, due_date, status, name")
+      .select("team_id, start_date, due_date, status, name, key")
       .eq("id", project_id)
       .single();
 
@@ -137,6 +138,20 @@ export async function POST(request: Request) {
       summary: `Task "${title}" created`,
       detail: project.name ? `In ${project.name}` : undefined,
     });
+
+    if (assignee_id) {
+      void notifyTaskAssignedTelegram({
+        taskTitle: title,
+        projectName: project.name,
+        projectKey: project.key,
+        priority,
+        dueDate: due_date || null,
+        assigneeId: assignee_id,
+        assignedById: user.id,
+      }).catch((err) => {
+        console.error("[telegram] task assigned notify failed:", err);
+      });
+    }
 
     return NextResponse.json({ success: true, task: data });
   } catch {

@@ -12,6 +12,10 @@ export interface Profile {
   avatar_url: string | null;
   skills?: string[];
   leave_status?: MemberLeaveStatus;
+  telegram_chat_id?: number | null;
+  telegram_username?: string | null;
+  telegram_linked_at?: string | null;
+  telegram_notify_enabled?: boolean;
   created_at: string;
 }
 
@@ -41,6 +45,7 @@ export interface Project {
   due_date: string | null;
   created_by: string | null;
   created_at: string;
+  telegram_due_reminder_sent_at: string | null;
 }
 
 export interface Task {

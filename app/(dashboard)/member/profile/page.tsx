@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { PageShell } from "@/components/layout/dashboard-shell";
 import { MemberProfileView } from "@/components/members/member-profile-view";
+import { TelegramConnectCard } from "@/components/telegram/telegram-connect-card";
 import { PeriodFilter } from "@/components/performance/period-filter";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { getMemberProfile } from "@/lib/data/member-profile";
@@ -26,12 +27,15 @@ export default async function MemberProfilePage({
       description="Your tasks, projects, workload, and performance at a glance."
       action={<PeriodFilter current={period} />}
     >
-      <MemberProfileView
-        data={data}
-        projectHrefPrefix="/member/projects"
-        taskHrefPrefix="/member/tasks"
-        showRole={false}
-      />
+      <div className="space-y-8">
+        <TelegramConnectCard />
+        <MemberProfileView
+          data={data}
+          projectHrefPrefix="/member/projects"
+          taskHrefPrefix="/member/tasks"
+          showRole={false}
+        />
+      </div>
     </PageShell>
   );
 }

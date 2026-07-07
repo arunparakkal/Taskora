@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createProjectSchema } from "@/lib/validations/schemas";
 import { generateProjectKey } from "@/lib/utils";
 import { logActivityEvent } from "@/lib/activity/log-event";
+import { notifyProjectCreatedTelegram } from "@/lib/telegram/notify-project-created";
 
 export async function POST(request: Request) {
   try {
@@ -63,6 +64,19 @@ export async function POST(request: Request) {
       projectId: data.id,
       summary: `Project "${data.name}" created`,
       detail: data.key,
+    });
+
+    void notifyProjectCreatedTelegram({
+      projectId: data.id,
+      projectName: data.name,
+      projectKey: data.key,
+      teamId: data.team_id,
+      startDate: data.start_date,
+      dueDate: data.due_date,
+      description: data.description,
+      createdById: user.id,
+    }).catch((err) => {
+      console.error("[telegram] project created notify failed:", err);
     });
 
     return NextResponse.json({ success: true, project: data });

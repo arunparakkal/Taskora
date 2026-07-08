@@ -10,6 +10,7 @@ import type { AppRole } from "@/types/database";
 import type { NotificationWithDetails } from "@/lib/data/notifications";
 
 const POLL_INTERVAL_MS = 30000;
+const BELL_PREVIEW_LIMIT = 10;
 
 export function NotificationBell({ role }: { role: AppRole }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -21,12 +22,25 @@ export function NotificationBell({ role }: { role: AppRole }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const fetchNotifications = useCallback(async () => {
+  const fetchUnreadCount = useCallback(async () => {
     try {
-      const res = await fetch("/api/notifications");
+      const res = await fetch("/api/notifications?limit=0");
       if (!res.ok) return;
       const json = await res.json();
-      setNotifications(json.notifications ?? []);
+      setUnreadCount(json.unreadCount ?? 0);
+    } catch {
+      // Silent — notifications are non-critical background data.
+    }
+  }, []);
+
+  const fetchRecentNotifications = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `/api/notifications?limit=${BELL_PREVIEW_LIMIT}`
+      );
+      if (!res.ok) return;
+      const json = await res.json();
+      setNotifications((json.notifications ?? []).slice(0, BELL_PREVIEW_LIMIT));
       setUnreadCount(json.unreadCount ?? 0);
     } catch {
       // Silent — notifications are non-critical background data.
@@ -34,10 +48,10 @@ export function NotificationBell({ role }: { role: AppRole }) {
   }, []);
 
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, POLL_INTERVAL_MS);
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  }, [fetchUnreadCount]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -88,7 +102,7 @@ export function NotificationBell({ role }: { role: AppRole }) {
     setOpen(next);
     if (next) {
       setLoading(true);
-      await fetchNotifications();
+      await fetchRecentNotifications();
       setLoading(false);
     } else {
       setExpandedId(null);
@@ -127,7 +141,16 @@ export function NotificationBell({ role }: { role: AppRole }) {
           )}
         >
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <p className="text-sm font-semibold text-slate-900">Notifications</p>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">
+                Notifications
+              </p>
+              <p className="text-[11px] text-slate-400">
+                {notifications.length > 0
+                  ? `${Math.min(notifications.length, BELL_PREVIEW_LIMIT)} most recent`
+                  : "No recent notifications"}
+              </p>
+            </div>
             {unreadCount > 0 && (
               <button
                 type="button"

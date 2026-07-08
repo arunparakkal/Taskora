@@ -45,7 +45,7 @@ export function ReviewActions({ taskId }: { taskId: string }) {
         <Button
           size="sm"
           variant="outline"
-          className="border-orange-200 text-orange-700 hover:bg-orange-50"
+          className="border-orange-200 text-orange-700 hover:bg-orange-50 dark:border-orange-500/35 dark:text-orange-300 dark:hover:bg-orange-500/10"
           disabled={pendingApprove}
           onClick={() => setDialogOpen(true)}
         >

@@ -30,7 +30,7 @@ export default async function AdminSelfProfilePage({
       description="Your administrative activity and organization overview."
       action={<PeriodFilter current={period} />}
     >
-      <div className="space-y-8">
+      <div className="space-y-6">
         <TelegramConnectCard />
         <AdminProfileView data={data} isSelf />
       </div>

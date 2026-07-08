@@ -1,7 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
-import { buildActivityFeed } from "@/lib/activity/build-feed";
+import {
+  buildActivityFeed,
+  buildPersonalActivityFeed,
+} from "@/lib/activity/build-feed";
 import { getMemberTeamIds } from "@/lib/data/queries";
 import { getLedTeamIds } from "@/lib/data/team-lead";
+
+/** Actions performed by the signed-in user (tasks, reviews, projects). */
+export async function getPersonalActivityFeed(userId: string, limit = 80) {
+  return buildPersonalActivityFeed(userId, limit);
+}
 
 /** Activity on tasks across the member's team projects. */
 export async function getMemberActivityFeed(userId: string, limit = 80) {

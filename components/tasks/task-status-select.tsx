@@ -153,7 +153,7 @@ export function TaskStatusSelect({
             ))}
           </SelectContent>
         </Select>
-        <p className="text-xs text-orange-700">
+        <p className="text-xs text-orange-700 dark:text-orange-300">
           Move to In Progress, then Done when fixed.
         </p>
       </div>

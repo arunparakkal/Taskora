@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/avatar-colors";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { NotificationBell } from "@/components/layout/notification-bell";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +31,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/member/tasks": "My Tasks",
   "/member/projects": "My Projects",
   "/member/performance": "My Performance",
+  "/member/activity": "Activity",
   "/admin/notifications": "Notifications",
   "/team-lead/notifications": "Notifications",
   "/member/notifications": "Notifications",
@@ -63,7 +65,7 @@ export function TopHeader({
   const title = getPageTitle(pathname);
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 overflow-visible border-b border-slate-200 bg-white px-6">
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 overflow-visible border-b border-slate-200 bg-white px-6 dark:border-slate-800 dark:bg-[var(--card)]">
       <button
         type="button"
         onClick={onMenuClick}
@@ -86,11 +88,12 @@ export function TopHeader({
       )}
 
       <div className="ml-auto flex shrink-0 items-center gap-3">
+        <ThemeToggle />
         <NotificationBell role={profile.role} />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-lg p-1 transition-colors hover:bg-slate-100">
+            <button className="flex items-center gap-2 rounded-lg p-1 transition-colors hover:bg-slate-100 dark:hover:bg-white/5">
               <Avatar className="h-9 w-9">
                 <AvatarFallback className="bg-gradient-to-br from-blue-600 to-blue-400 text-xs font-semibold text-white">
                   {getInitials(profile.full_name || profile.email)}

@@ -27,7 +27,7 @@ export default async function MemberProfilePage({
       description="Your tasks, projects, workload, and performance at a glance."
       action={<PeriodFilter current={period} />}
     >
-      <div className="space-y-8">
+      <div className="space-y-6">
         <TelegramConnectCard />
         <MemberProfileView
           data={data}

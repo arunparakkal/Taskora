@@ -28,10 +28,7 @@ export default async function TeamLeadTaskDetailPage({
   const isArchived = task.project?.status === "archived";
 
   return (
-    <PageShell
-      title={task.title}
-      description={`[${task.project?.key ?? "—"}] ${task.project?.name ?? "Project"}`}
-    >
+    <PageShell title="" hideHeader>
       <TaskDetailView
         task={task}
         activity={activity}

@@ -6,29 +6,35 @@ export function PageShell({
   action,
   stats,
   children,
+  hideHeader = false,
 }: {
   title: string;
   description?: string;
   action?: React.ReactNode;
   stats?: React.ReactNode;
   children: React.ReactNode;
+  hideHeader?: boolean;
 }) {
   return (
     <div className="flex flex-1 flex-col">
-      <div className="border-b border-slate-200 bg-white px-6 py-6 lg:px-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              {title}
-            </h1>
-            {description && (
-              <p className="mt-1 text-sm text-slate-500">{description}</p>
-            )}
+      {!hideHeader && (
+        <div className="border-b border-slate-200 bg-white px-6 py-6 dark:border-slate-800 dark:bg-[var(--card)] lg:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                {title}
+              </h1>
+              {description && (
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  {description}
+                </p>
+              )}
+            </div>
+            {action && <div className="shrink-0">{action}</div>}
           </div>
-          {action && <div className="shrink-0">{action}</div>}
         </div>
-      </div>
-      <div className="flex-1 p-6 lg:p-8">
+      )}
+      <div className={cn("flex-1", hideHeader ? "p-6 lg:p-8" : "p-6 lg:p-8")}>
         {stats}
         {children}
       </div>

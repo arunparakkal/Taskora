@@ -1,13 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Monitor, Moon, ShieldCheck, Sun, User } from "lucide-react";
-import { useState } from "react";
+import { ShieldCheck, User } from "lucide-react";
 import type { Profile } from "@/types/database";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/avatar-colors";
 import { SignOutButton } from "@/components/layout/sign-out-button";
-import { useTheme, type Theme } from "@/components/theme/theme-provider";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -20,65 +18,6 @@ function profileHrefForRole(role: string, userId: string): string {
   if (role === "admin") return "/admin/profile";
   if (role === "team_lead") return `/team-lead/members/${userId}`;
   return "/member/profile";
-}
-
-const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-  { value: "system", label: "System", icon: Monitor },
-];
-
-function AppearanceRow() {
-  const { theme, setTheme } = useTheme();
-  const [open, setOpen] = useState(false);
-  const ActiveIcon = theme === "light" ? Sun : theme === "dark" ? Moon : Monitor;
-
-  return (
-    <div className="w-full">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="group flex w-full items-center gap-3 rounded-[14px] px-3.5 py-3 text-left transition-colors duration-[180ms] ease-out hover:bg-[#F8FAFC] dark:hover:bg-white/5"
-      >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors group-hover:bg-white dark:bg-white/10 dark:text-slate-300">
-          <ActiveIcon className="h-4 w-4" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Appearance
-          </span>
-          <span className="block text-xs text-slate-500 dark:text-slate-400">
-            Light, dark &amp; system
-          </span>
-        </span>
-      </button>
-
-      {open && (
-        <div className="mt-1.5 grid grid-cols-3 gap-1.5 px-1">
-          {THEME_OPTIONS.map((opt) => {
-            const Icon = opt.icon;
-            const active = theme === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setTheme(opt.value)}
-                className={
-                  "flex flex-col items-center gap-1 rounded-[12px] border px-2 py-2.5 text-[11px] font-medium transition-all " +
-                  (active
-                    ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/40 dark:bg-blue-500/15 dark:text-blue-300"
-                    : "border-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5")
-                }
-              >
-                <Icon className="h-4 w-4" />
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
 }
 
 export function AccountMenuContent({ profile }: { profile: Profile }) {
@@ -132,13 +71,6 @@ export function AccountMenuContent({ profile }: { profile: Profile }) {
               </span>
             </span>
           </Link>
-        </DropdownMenuItem>
-
-        <DropdownMenuItem
-          onSelect={(e) => e.preventDefault()}
-          className="rounded-[14px] p-0 focus:bg-transparent data-[highlighted]:bg-transparent"
-        >
-          <AppearanceRow />
         </DropdownMenuItem>
       </div>
 

@@ -16,9 +16,9 @@ import { LEVEL_STYLES } from "@/components/performance/performance-level-badge";
 import type { MemberPerformanceEntry } from "@/lib/data/performance";
 
 const RANK_STYLES = [
-  "bg-amber-100 text-amber-700",
-  "bg-slate-200 text-slate-700",
-  "bg-orange-100 text-orange-700",
+  "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
+  "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
+  "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300",
 ];
 
 export function TopPerformers({

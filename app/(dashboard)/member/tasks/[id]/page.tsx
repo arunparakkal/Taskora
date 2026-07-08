@@ -23,10 +23,7 @@ export default async function MemberTaskDetailPage({
   }
 
   return (
-    <PageShell
-      title={task.title}
-      description={`[${task.project?.key ?? "—"}] ${task.project?.name ?? "Project"}`}
-    >
+    <PageShell title="" hideHeader>
       <TaskDetailView task={task} activity={activity} />
     </PageShell>
   );

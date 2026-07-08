@@ -9,7 +9,6 @@ import {
   CheckSquare,
   ChevronDown,
   Gauge,
-  Bell,
   History,
   UserCircle,
 } from "lucide-react";
@@ -36,9 +35,8 @@ const adminNav: NavItem[] = [
   { label: "Teams", href: "/admin/teams", icon: UsersRound },
   { label: "Projects", href: "/admin/projects", icon: FolderKanban },
   { label: "Tasks", href: "/admin/tasks", icon: CheckSquare },
-  { label: "Activities", href: "/admin/activity", icon: History },
+  { label: "Activity", href: "/admin/activity", icon: History },
   { label: "Performance", href: "/admin/performance", icon: Gauge },
-  { label: "Notifications", href: "/admin/notifications", icon: Bell },
   { label: "My Profile", href: "/admin/profile", icon: UserCircle },
 ];
 
@@ -47,16 +45,15 @@ const teamLeadNav: NavItem[] = [
   { label: "Projects", href: "/team-lead/projects", icon: FolderKanban },
   { label: "Team Tasks", href: "/team-lead/tasks", icon: CheckSquare },
   { label: "My Team", href: "/team-lead/team", icon: UsersRound },
-  { label: "Activities", href: "/team-lead/activity", icon: History },
+  { label: "Activity", href: "/team-lead/activity", icon: History },
   { label: "Performance", href: "/team-lead/performance", icon: Gauge },
-  { label: "Notifications", href: "/team-lead/notifications", icon: Bell },
 ];
 
 const memberNav: NavItem[] = [
   { label: "My Tasks", href: "/member/tasks", icon: CheckSquare },
   { label: "My Projects", href: "/member/projects", icon: FolderKanban },
   { label: "My Performance", href: "/member/performance", icon: Gauge },
-  { label: "Notifications", href: "/member/notifications", icon: Bell },
+  { label: "Activity", href: "/member/activity", icon: History },
   { label: "My Profile", href: "/member/profile", icon: UserCircle },
 ];
 

@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import type { NotificationWithDetails } from "@/lib/data/notifications";
+import {
+  getUnreadNotificationCount,
+  type NotificationWithDetails,
+} from "@/lib/data/notifications";
 import { enrichNotificationActors } from "@/lib/notifications/enrich-actors";
 
-export async function GET() {
+const NOTIFICATION_SELECT = `
+  *,
+  actor:profiles!notifications_actor_id_fkey(id, full_name, email, role),
+  task:tasks(id, title, status, priority, due_date, project:projects(id, key, name))
+`;
+
+export async function GET(request: Request) {
   try {
     const supabase = await createClient();
     const {
@@ -14,16 +23,25 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const limitParam = searchParams.get("limit");
+    const limit =
+      limitParam !== null
+        ? Math.min(50, Math.max(0, Number.parseInt(limitParam, 10) || 0))
+        : 50;
+
+    const unreadCount = await getUnreadNotificationCount();
+
+    if (limit === 0) {
+      return NextResponse.json({ notifications: [], unreadCount });
+    }
+
     const { data, error } = await supabase
       .from("notifications")
-      .select(
-        `*,
-        actor:profiles!notifications_actor_id_fkey(id, full_name, email, role),
-        task:tasks(id, title, status, priority, due_date, project:projects(id, key, name))`
-      )
+      .select(NOTIFICATION_SELECT)
       .eq("recipient_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(limit);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
@@ -32,7 +50,6 @@ export async function GET() {
     const notifications = await enrichNotificationActors(
       (data ?? []) as unknown as NotificationWithDetails[]
     );
-    const unreadCount = notifications.filter((n) => !n.is_read).length;
 
     return NextResponse.json({ notifications, unreadCount });
   } catch {

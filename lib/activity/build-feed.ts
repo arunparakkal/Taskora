@@ -302,6 +302,232 @@ export async function buildActivityFeed(
   return sortAndLimit([...deduped.values()], limit);
 }
 
+function unwrapRelation<T>(value: T | T[] | null | undefined): T | null {
+  if (value == null) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
+export async function buildPersonalActivityFeed(
+  userId: string,
+  limit = 80
+): Promise<ActivityFeedItem[]> {
+  const supabase = await createClient();
+  const items: ActivityFeedItem[] = [];
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", userId)
+    .single();
+  const actor = profile as Pick<Profile, "full_name" | "email"> | null;
+
+  const { data: myTaskActivity } = await supabase
+    .from("task_activity")
+    .select(
+      `
+      *,
+      task:tasks(
+        id,
+        title,
+        project_id,
+        assignee_id,
+        project:projects(id, name, key, team_id)
+      )
+    `
+    )
+    .eq("actor_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  const teamIds = new Set<string>();
+  for (const row of myTaskActivity ?? []) {
+    const task = unwrapRelation(row.task as {
+      id: string;
+      title: string;
+      project_id: string;
+      assignee_id: string | null;
+      project?: {
+        id: string;
+        name: string;
+        key: string;
+        team_id: string;
+      } | null;
+    } | null);
+    const project = unwrapRelation(task?.project);
+    if (project?.team_id) teamIds.add(project.team_id);
+
+    const eventType = taskActivityToEventType(row.action);
+    let detail: string | null = null;
+    if (row.from_status && row.to_status) {
+      detail = `${TASK_STATUS_LABELS[row.from_status as TaskStatus]} → ${TASK_STATUS_LABELS[row.to_status as TaskStatus]}`;
+    }
+
+    items.push({
+      id: row.id,
+      eventType,
+      created_at: row.created_at,
+      actor,
+      task_id: row.task_id,
+      taskTitle: task?.title ?? "Task",
+      projectId: task?.project_id,
+      projectName: project?.name,
+      projectKey: project?.key,
+      teamId: project?.team_id,
+      assigneeId: task?.assignee_id ?? null,
+      summary: ACTIVITY_EVENT_LABELS[eventType],
+      detail,
+      comment: row.comment,
+      from_status: row.from_status,
+      to_status: row.to_status,
+    });
+  }
+
+  const { data: myEvents } = await supabase
+    .from("activity_events")
+    .select("*")
+    .eq("actor_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  const eventProjectIds = [
+    ...new Set(
+      (myEvents ?? [])
+        .map((e) => e.project_id)
+        .filter(Boolean) as string[]
+    ),
+  ];
+  const eventTeamIds = [
+    ...new Set(
+      (myEvents ?? []).map((e) => e.team_id).filter(Boolean) as string[]
+    ),
+  ];
+  for (const id of eventTeamIds) teamIds.add(id);
+
+  const projectMap = new Map<
+    string,
+    { id: string; name: string; key: string; team_id: string }
+  >();
+  if (eventProjectIds.length > 0) {
+    const { data: projects } = await supabase
+      .from("projects")
+      .select("id, name, key, team_id")
+      .in("id", eventProjectIds);
+    for (const p of projects ?? []) {
+      projectMap.set(p.id, p);
+      if (p.team_id) teamIds.add(p.team_id);
+    }
+  }
+
+  const taskIdsFromEvents = [
+    ...new Set(
+      (myEvents ?? []).map((e) => e.task_id).filter(Boolean) as string[]
+    ),
+  ];
+  const taskMap = new Map<string, { id: string; title: string }>();
+  if (taskIdsFromEvents.length > 0) {
+    const { data: tasks } = await supabase
+      .from("tasks")
+      .select("id, title")
+      .in("id", taskIdsFromEvents);
+    for (const t of tasks ?? []) taskMap.set(t.id, t);
+  }
+
+  const teamMap = new Map<string, string>();
+  if (teamIds.size > 0) {
+    const { data: teams } = await supabase
+      .from("teams")
+      .select("id, name")
+      .in("id", [...teamIds]);
+    for (const t of teams ?? []) teamMap.set(t.id, t.name);
+  }
+
+  for (const row of myEvents ?? []) {
+    const project = row.project_id
+      ? projectMap.get(row.project_id)
+      : undefined;
+    const eventType = row.event_type as ActivityEventType;
+
+    items.push({
+      id: row.id,
+      eventType,
+      created_at: row.created_at,
+      actor,
+      task_id: row.task_id,
+      taskTitle: row.task_id ? taskMap.get(row.task_id)?.title : undefined,
+      projectId: row.project_id ?? undefined,
+      projectName: project?.name,
+      projectKey: project?.key,
+      teamId: row.team_id ?? project?.team_id,
+      teamName: row.team_id
+        ? teamMap.get(row.team_id)
+        : project?.team_id
+          ? teamMap.get(project.team_id)
+          : undefined,
+      summary: row.summary,
+      detail: row.detail,
+    });
+  }
+
+  const { data: myCreatedTasks } = await supabase
+    .from("tasks")
+    .select(
+      `
+      id,
+      title,
+      project_id,
+      assignee_id,
+      created_at,
+      project:projects(id, name, key, team_id)
+    `
+    )
+    .eq("created_by", userId)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  for (const task of myCreatedTasks ?? []) {
+    const project = unwrapRelation(
+      task.project as unknown as {
+        id: string;
+        name: string;
+        key: string;
+        team_id: string;
+      } | null
+    );
+    if (project?.team_id) teamIds.add(project.team_id);
+
+    items.push({
+      id: `task-created-${task.id}`,
+      eventType: "task_created",
+      created_at: task.created_at,
+      actor,
+      task_id: task.id,
+      taskTitle: task.title,
+      projectId: task.project_id,
+      projectName: project?.name,
+      projectKey: project?.key,
+      teamId: project?.team_id,
+      teamName: project?.team_id ? teamMap.get(project.team_id) : undefined,
+      assigneeId: task.assignee_id,
+      summary: ACTIVITY_EVENT_LABELS.task_created,
+      detail: project?.name ? `In ${project.name}` : null,
+    });
+  }
+
+  const deduped = new Map<string, ActivityFeedItem>();
+  for (const item of items) {
+    if (!deduped.has(item.id)) deduped.set(item.id, item);
+  }
+
+  const sorted = sortAndLimit([...deduped.values()], limit);
+  for (const item of sorted) {
+    if (item.teamId && !item.teamName) {
+      item.teamName = teamMap.get(item.teamId);
+    }
+  }
+
+  return sorted;
+}
+
 export function projectStatusDetail(
   fromStatus: string,
   toStatus: string

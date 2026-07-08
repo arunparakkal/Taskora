@@ -12,8 +12,10 @@ import {
   Pause,
   Play,
   Trash2,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +50,43 @@ function statusToast(status: ProjectStatus, projectName: string) {
         description: `"${projectName}" moved to Archived.`,
       };
   }
+}
+
+function IconAction({
+  label,
+  icon: Icon,
+  onClick,
+  disabled,
+  className,
+}: {
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className="group/tip relative flex">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        aria-label={label}
+        disabled={disabled}
+        onClick={onClick}
+        className={cn("h-8 w-8 p-0", className)}
+      >
+        <Icon className="h-4 w-4" />
+      </Button>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 translate-y-1 scale-90 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-lg ring-1 ring-black/5 transition-all duration-150 ease-out group-hover/tip:translate-y-0 group-hover/tip:scale-100 group-hover/tip:opacity-100 dark:bg-slate-700"
+      >
+        {label}
+        <span className="absolute left-1/2 top-full h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[1px] bg-slate-900 dark:bg-slate-700" />
+      </span>
+    </div>
+  );
 }
 
 export function ProjectActionsMenu({
@@ -121,56 +160,40 @@ export function ProjectActionsMenu({
     <>
       <div className="flex items-center justify-end gap-1">
         {canPause && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1 px-2 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+          <IconAction
+            label="Pause"
+            icon={Pause}
             disabled={loading}
             onClick={() => void setStatus("paused")}
-          >
-            <Pause className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Pause</span>
-          </Button>
+            className="text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:text-amber-300 dark:hover:bg-amber-500/10"
+          />
         )}
         {canResume && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1 px-2 text-green-700 hover:bg-green-50 hover:text-green-800"
+          <IconAction
+            label="Resume"
+            icon={Play}
             disabled={loading}
             onClick={() => void setStatus("active")}
-          >
-            <Play className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Resume</span>
-          </Button>
+            className="text-green-700 hover:bg-green-50 hover:text-green-800 dark:text-green-300 dark:hover:bg-green-500/10"
+          />
         )}
         {canArchive && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1 px-2 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+          <IconAction
+            label="Archive"
+            icon={Archive}
             disabled={loading}
             onClick={() => setArchiveOpen(true)}
-          >
-            <Archive className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Archive</span>
-          </Button>
+            className="text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/60"
+          />
         )}
         {canRestore && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1 px-2 text-green-700 hover:bg-green-50 hover:text-green-800"
+          <IconAction
+            label="Unarchive"
+            icon={ArchiveRestore}
             disabled={loading}
             onClick={() => void setStatus("active")}
-          >
-            <ArchiveRestore className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Unarchive</span>
-          </Button>
+            className="text-green-700 hover:bg-green-50 hover:text-green-800 dark:text-green-300 dark:hover:bg-green-500/10"
+          />
         )}
         {detailHref && (
           <Button

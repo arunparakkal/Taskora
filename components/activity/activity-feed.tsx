@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
+  CalendarRange,
   CheckCircle2,
   FolderKanban,
   History,
@@ -148,6 +149,31 @@ function getDateGroup(dateStr: string) {
   return "Earlier";
 }
 
+type ActivityPeriod = "all" | "week" | "month" | "3months";
+
+const PERIOD_OPTIONS: { value: ActivityPeriod; label: string }[] = [
+  { value: "all", label: "All time" },
+  { value: "week", label: "This week" },
+  { value: "month", label: "This month" },
+  { value: "3months", label: "Last 3 months" },
+];
+
+function periodCutoff(period: ActivityPeriod): number | null {
+  if (period === "all") return null;
+  const now = new Date();
+  if (period === "week") {
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const daysSinceMonday = (start.getDay() + 6) % 7;
+    start.setDate(start.getDate() - daysSinceMonday);
+    return start.getTime();
+  }
+  if (period === "month") {
+    return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  }
+  // last 3 months
+  return new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()).getTime();
+}
+
 function matchesSearch(item: ActivityFeedItem, query: string) {
   const q = query.trim().toLowerCase();
   if (!q) return true;
@@ -270,18 +296,40 @@ function ActivityFeedRow({
         <Icon className={cn("h-4 w-4", style.iconColor)} />
       </div>
       <div className="min-w-0 flex-1 pt-0.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={cn(
-              "rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset",
-              style.badge
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                "rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset",
+                style.badge
+              )}
+            >
+              {label}
+            </span>
+            {projectLabel && (
+              <span className="inline-flex max-w-[15rem] items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                <FolderKanban className="h-3 w-3 shrink-0 opacity-60" />
+                <span className="truncate">{projectLabel}</span>
+              </span>
             )}
+            {item.teamName && !projectLabel && (
+              <span className="inline-flex max-w-[15rem] items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                <UsersRound className="h-3 w-3 shrink-0 opacity-60" />
+                <span className="truncate">{item.teamName}</span>
+              </span>
+            )}
+          </div>
+          <div
+            className="shrink-0 text-right leading-tight"
+            title={formatDateTime(item.created_at)}
           >
-            {label}
-          </span>
-          <span className="text-[11px] text-slate-400 dark:text-slate-500">
-            {formatRelativeTime(item.created_at)}
-          </span>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              {formatRelativeTime(item.created_at)}
+            </p>
+            <p className="mt-0.5 hidden text-[11px] tabular-nums text-slate-400 dark:text-slate-500 sm:block">
+              {formatDateTime(item.created_at)}
+            </p>
+          </div>
         </div>
         <p className="mt-2 text-sm leading-relaxed text-slate-900 dark:text-slate-100">
           {personal ? (
@@ -320,16 +368,6 @@ function ActivityFeedRow({
             {headline}
           </p>
         )}
-        {projectLabel && (
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-            {projectLabel}
-          </p>
-        )}
-        {item.teamName && !projectLabel && (
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-            Team: {item.teamName}
-          </p>
-        )}
         {item.detail && item.eventType !== "member_added" && (
           <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
             {item.detail}
@@ -341,9 +379,6 @@ function ActivityFeedRow({
             <span className="line-clamp-4">{item.comment}</span>
           </p>
         )}
-        <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
-          {formatDateTime(item.created_at)}
-        </p>
       </div>
     </li>
   );
@@ -372,20 +407,32 @@ export function ActivityFeed({
 }) {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<ActivityFilterType>("all");
+  const [period, setPeriod] = useState<ActivityPeriod>("all");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
     setPage(1);
-  }, [query, typeFilter]);
+  }, [query, typeFilter, period]);
 
   const filtered = useMemo(() => {
+    const cutoff = periodCutoff(period);
     return activity.filter((item) => {
       if (typeFilter !== "all" && item.eventType !== typeFilter) return false;
+      if (cutoff !== null && new Date(item.created_at).getTime() < cutoff)
+        return false;
       return matchesSearch(item, query);
     });
-  }, [activity, query, typeFilter]);
+  }, [activity, query, typeFilter, period]);
 
   const stats = useMemo(() => activityStats(filtered), [filtered]);
+
+  const typeBreakdown = useMemo(() => {
+    const counts = new Map<ActivityEventType, number>();
+    for (const item of activity) {
+      counts.set(item.eventType, (counts.get(item.eventType) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  }, [activity]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -416,44 +463,26 @@ export function ActivityFeed({
       .map((key) => ({ key, items: groups.get(key)! }));
   }, [paginated]);
 
-  return (
-    <div className="space-y-5">
-      {activity.length > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <ActivityStatCard label="Total events" value={stats.total} />
-          <ActivityStatCard
-            label="This week"
-            value={stats.thisWeek}
-            hint="Last 7 days"
-          />
-          <ActivityStatCard
-            label="Tasks touched"
-            value={stats.tasksTouched}
-          />
-          <ActivityStatCard
-            label={personal ? "Your updates" : "Task updates"}
-            value={personal ? stats.updates + stats.approvals : stats.updates}
-            hint={
-              stats.approvals > 0
-                ? `${stats.approvals} approval${stats.approvals !== 1 ? "s" : ""}`
-                : undefined
-            }
-          />
-        </div>
-      )}
+  if (activity.length === 0) {
+    return (
+      <EmptyState
+        icon={personal ? Sparkles : History}
+        title={emptyTitle}
+        description={emptyDescription}
+      />
+    );
+  }
 
+  const rail = (
+    <aside className="order-1 space-y-4 lg:order-2 lg:sticky lg:top-6 lg:self-start">
       <Card className="border-slate-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/60">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative min-w-0 flex-1">
+        <div className="space-y-3">
+          <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={
-                personal
-                  ? "Search your activity by task, project, or keyword..."
-                  : "Search activity by task, project, team, or person..."
-              }
+              placeholder={personal ? "Search your activity..." : "Search activity..."}
               className="h-10 border-slate-200 bg-slate-50 pl-10 dark:border-slate-700 dark:bg-slate-800/50"
             />
           </div>
@@ -461,7 +490,7 @@ export function ActivityFeed({
             value={typeFilter}
             onValueChange={(v) => setTypeFilter(v as ActivityFilterType)}
           >
-            <SelectTrigger className="h-10 w-full sm:w-[200px]">
+            <SelectTrigger className="h-10 w-full">
               <SelectValue placeholder="Filter by type" />
             </SelectTrigger>
             <SelectContent>
@@ -472,62 +501,153 @@ export function ActivityFeed({
               ))}
             </SelectContent>
           </Select>
+          <Select
+            value={period}
+            onValueChange={(v) => setPeriod(v as ActivityPeriod)}
+          >
+            <SelectTrigger className="h-10 w-full">
+              <span className="flex min-w-0 items-center gap-2">
+                <CalendarRange className="h-4 w-4 shrink-0 text-slate-400" />
+                <SelectValue placeholder="Time period" />
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              {PERIOD_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </Card>
 
-      {activity.length === 0 ? (
-        <EmptyState
-          icon={personal ? Sparkles : History}
-          title={emptyTitle}
-          description={emptyDescription}
-        />
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={Search}
-          title="No matching activity"
-          description="Try a different search or filter type."
-        />
-      ) : (
-        <Card className="overflow-hidden border-slate-200/80 shadow-sm dark:border-slate-800">
-          <CardContent className="p-4 sm:p-6">
-            {paginate && filtered.length > pageSize && (
-              <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
-                {filtered.length} event{filtered.length !== 1 ? "s" : ""} total
-              </p>
+      {typeBreakdown.length > 0 && (
+        <Card className="border-slate-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/60">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+              Breakdown
+            </h3>
+            {typeFilter !== "all" && (
+              <button
+                type="button"
+                onClick={() => setTypeFilter("all")}
+                className="text-[11px] font-semibold text-blue-600 hover:underline dark:text-blue-400"
+              >
+                Clear
+              </button>
             )}
-            <div className="space-y-8">
-              {grouped.map((group) => (
-                <section key={group.key}>
-                  <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                    {group.key}
-                  </h3>
-                  <ul>
-                    {group.items.map((item, index) => (
-                      <ActivityFeedRow
-                        key={item.id}
-                        item={item}
-                        role={role}
-                        currentUserId={currentUserId}
-                        personal={personal}
-                        isLast={index === group.items.length - 1}
-                      />
-                    ))}
-                  </ul>
-                </section>
-              ))}
-            </div>
-          </CardContent>
-          {paginate && filtered.length > pageSize && (
-            <TablePagination
-              total={filtered.length}
-              page={currentPage}
-              pageSize={pageSize}
-              onPageChange={setPage}
-              itemLabel="event"
-            />
-          )}
+          </div>
+          <div className="space-y-1">
+            {typeBreakdown.map(([type, count]) => {
+              const style = EVENT_STYLES[type] ?? EVENT_STYLES.task_status_changed;
+              const Icon = style.icon;
+              const active = typeFilter === type;
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setTypeFilter(active ? "all" : type)}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors",
+                    active
+                      ? "bg-slate-100 dark:bg-slate-800"
+                      : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
+                      style.iconBg
+                    )}
+                  >
+                    <Icon className={cn("h-3 w-3", style.iconColor)} />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-slate-700 dark:text-slate-300">
+                    {ACTIVITY_EVENT_LABELS[type]}
+                  </span>
+                  <span className="tabular-nums text-xs font-bold text-slate-500 dark:text-slate-400">
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </Card>
       )}
+    </aside>
+  );
+
+  const feed =
+    filtered.length === 0 ? (
+      <EmptyState
+        icon={Search}
+        title="No matching activity"
+        description="Try a different search or filter type."
+      />
+    ) : (
+      <Card className="overflow-hidden border-slate-200/80 shadow-sm dark:border-slate-800">
+        <CardContent className="p-4 sm:p-6">
+          {paginate && filtered.length > pageSize && (
+            <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+              {filtered.length} event{filtered.length !== 1 ? "s" : ""} total
+            </p>
+          )}
+          <div className="space-y-8">
+            {grouped.map((group) => (
+              <section key={group.key}>
+                <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                  {group.key}
+                </h3>
+                <ul>
+                  {group.items.map((item, index) => (
+                    <ActivityFeedRow
+                      key={item.id}
+                      item={item}
+                      role={role}
+                      currentUserId={currentUserId}
+                      personal={personal}
+                      isLast={index === group.items.length - 1}
+                    />
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        </CardContent>
+        {paginate && filtered.length > pageSize && (
+          <TablePagination
+            total={filtered.length}
+            page={currentPage}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            itemLabel="event"
+          />
+        )}
+      </Card>
+    );
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <ActivityStatCard label="Total events" value={stats.total} />
+        <ActivityStatCard label="This week" value={stats.thisWeek} hint="Last 7 days" />
+        <ActivityStatCard label="Tasks touched" value={stats.tasksTouched} />
+        <ActivityStatCard
+          label={personal ? "Your updates" : "Task updates"}
+          value={personal ? stats.updates + stats.approvals : stats.updates}
+          hint={
+            stats.approvals > 0
+              ? `${stats.approvals} approval${stats.approvals !== 1 ? "s" : ""}`
+              : undefined
+          }
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
+        <div className="order-2 min-w-0 lg:order-1">{feed}</div>
+        {rail}
+      </div>
     </div>
   );
 }

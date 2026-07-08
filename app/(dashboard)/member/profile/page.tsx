@@ -33,6 +33,7 @@ export default async function MemberProfilePage({
           data={data}
           projectHrefPrefix="/member/projects"
           taskHrefPrefix="/member/tasks"
+          activityHref="/member/activity"
           showRole={false}
         />
       </div>

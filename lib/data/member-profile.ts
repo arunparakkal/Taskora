@@ -50,6 +50,7 @@ export interface MemberActivityItem {
   from_status: string | null;
   to_status: string | null;
   comment: string | null;
+  taskId: string | null;
   taskTitle: string;
   projectName: string | null;
   projectKey: string | null;
@@ -318,6 +319,7 @@ export async function getMemberProfile(
         from_status: row.from_status,
         to_status: row.to_status,
         comment: row.comment,
+        taskId: row.task_id ?? null,
         taskTitle: task?.title ?? "Task",
         projectName: task?.project?.name ?? null,
         projectKey: task?.project?.key ?? null,

@@ -1,4 +1,11 @@
-import { CheckCheck, History, RotateCcw } from "lucide-react";
+import {
+  CheckCheck,
+  CheckCircle2,
+  History,
+  Plus,
+  RotateCcw,
+  Send,
+} from "lucide-react";
 import type { NotificationType } from "@/types/database";
 
 export const NOTIFICATION_META: Record<
@@ -43,6 +50,36 @@ export const NOTIFICATION_META: Record<
     accentBg: "bg-orange-50",
     accentBorder: "border-orange-100",
     accentText: "text-orange-900",
+  },
+  task_submitted: {
+    icon: Send,
+    badgeBg: "bg-blue-500",
+    badgeText: "text-white",
+    ring: "ring-blue-100",
+    verb: "submitted for review",
+    accentBg: "bg-blue-50",
+    accentBorder: "border-blue-100",
+    accentText: "text-blue-900",
+  },
+  task_completed: {
+    icon: CheckCircle2,
+    badgeBg: "bg-emerald-500",
+    badgeText: "text-white",
+    ring: "ring-emerald-100",
+    verb: "completed",
+    accentBg: "bg-emerald-50",
+    accentBorder: "border-emerald-100",
+    accentText: "text-emerald-900",
+  },
+  task_created: {
+    icon: Plus,
+    badgeBg: "bg-violet-500",
+    badgeText: "text-white",
+    ring: "ring-violet-100",
+    verb: "created",
+    accentBg: "bg-violet-50",
+    accentBorder: "border-violet-100",
+    accentText: "text-violet-900",
   },
 };
 

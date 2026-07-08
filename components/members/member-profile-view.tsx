@@ -5,7 +5,6 @@ import {
   CheckSquare,
   Clock,
   FolderKanban,
-  History,
   Mail,
   UsersRound,
 } from "lucide-react";
@@ -15,6 +14,7 @@ import { PriorityBadge, RoleBadge, StatusBadge } from "@/components/shared/badge
 import { EntityAvatar } from "@/components/shared/entity-avatar";
 import { WorkloadBadge } from "@/components/shared/workload-badge";
 import { DataTableCard } from "@/components/shared/data-table-card";
+import { ProfileActivityPreview } from "@/components/members/profile-activity-preview";
 import { ProjectProgressBar } from "@/components/projects/project-progress-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,31 +26,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { TASK_STATUS_LABELS } from "@/lib/task-status";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import type { MemberProfileData } from "@/lib/data/member-profile";
-
-function activityLabel(item: MemberProfileData["recentActivity"][number]) {
-  if (item.action === "approved") return "Approved task";
-  if (item.action === "changes_requested") return "Requested changes";
-  if (item.action === "reopened") return "Reopened task";
-  if (item.from_status && item.to_status) {
-    const from = TASK_STATUS_LABELS[item.from_status as keyof typeof TASK_STATUS_LABELS] ?? item.from_status;
-    const to = TASK_STATUS_LABELS[item.to_status as keyof typeof TASK_STATUS_LABELS] ?? item.to_status;
-    return `${from} → ${to}`;
-  }
-  return "Updated task";
-}
 
 export function MemberProfileView({
   data,
   projectHrefPrefix,
   taskHrefPrefix,
+  activityHref,
+  activityLimit,
   showRole = true,
 }: {
   data: MemberProfileData;
   projectHrefPrefix?: string;
   taskHrefPrefix?: string;
+  activityHref?: string;
+  activityLimit?: number;
   showRole?: boolean;
 }) {
   const { profile, teams, performance, workload, taskStats, projects } = data;
@@ -372,43 +363,12 @@ export function MemberProfileView({
       )}
 
       {data.recentActivity.length > 0 && (
-        <div>
-          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900">
-            <History className="h-5 w-5 text-slate-500" />
-            Recent activity
-          </h3>
-          <Card className="border-slate-200 shadow-sm">
-            <CardContent className="p-4">
-              <ul className="divide-y divide-slate-100">
-                {data.recentActivity.map((item) => (
-                  <li key={item.id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
-                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100">
-                      <History className="h-4 w-4 text-slate-500" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-slate-900">
-                        <span className="font-medium">{activityLabel(item)}</span>
-                        {" · "}
-                        <span className="text-slate-600">{item.taskTitle}</span>
-                      </p>
-                      {item.projectName && (
-                        <p className="text-xs text-slate-500">
-                          [{item.projectKey}] {item.projectName}
-                        </p>
-                      )}
-                      {item.comment && (
-                        <p className="mt-1 text-xs text-amber-800">{item.comment}</p>
-                      )}
-                      <p className="mt-1 text-[11px] text-slate-400">
-                        {formatDateTime(item.created_at)}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
+        <ProfileActivityPreview
+          items={data.recentActivity}
+          taskHrefPrefix={taskHrefPrefix}
+          viewAllHref={activityHref}
+          limit={activityLimit ?? (activityHref ? 6 : 10)}
+        />
       )}
     </div>
   );

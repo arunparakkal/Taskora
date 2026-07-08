@@ -84,7 +84,10 @@ export interface TaskActivity {
 export type NotificationType =
   | "task_rejected"
   | "task_approved"
-  | "task_reopened";
+  | "task_reopened"
+  | "task_submitted"
+  | "task_completed"
+  | "task_created";
 
 export interface AppNotification {
   id: string;

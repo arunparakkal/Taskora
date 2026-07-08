@@ -60,6 +60,16 @@ export function TeamsList({
     [teams, query]
   );
 
+  const userTeams = useMemo(() => {
+    const map: Record<string, { id: string; name: string }[]> = {};
+    for (const team of teams) {
+      for (const uid of team.memberIds) {
+        (map[uid] ??= []).push({ id: team.id, name: team.name });
+      }
+    }
+    return map;
+  }, [teams]);
+
   if (teams.length === 0) {
     return (
       <EmptyState
@@ -149,6 +159,7 @@ export function TeamsList({
                         teamName={team.name}
                         allUsers={users}
                         currentMemberIds={team.memberIds}
+                        userTeams={userTeams}
                       />
                       <TeamActionsMenu
                         teamId={team.id}

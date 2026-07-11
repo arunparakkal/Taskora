@@ -493,4 +493,89 @@ If files were lost (e.g. accidental undo), the project was recovered from:
 
 ---
 
-*Last updated: full Performance module documentation (Admin org-wide, Team Lead, Member), review workflow, workload system, admin team delete, user edit rules, and navigation performance optimizations.*
+## Phase 9 — UI polish, activity, notifications & admin UX
+
+### Dark mode theme
+
+- Refined dark mode tokens in `app/globals.css` (tinted surfaces, readable text on status pills)
+- Explicit dark variants on status badges (`components/ui/badge.tsx`)
+- Dark mode on outline buttons, workload badges, review/rework buttons, top-performer ranks
+- `ThemeProvider` + `useTheme` hook; no-flash script in root layout
+- Shared `AccountMenuContent` in top header and sidebar (profile, settings, appearance, sign out)
+
+### Sidebar & layout
+
+- **Collapsible icon rail** — sidebar starts at 72px; hover expands to 260px (150ms expand / 200ms collapse delay)
+- Mobile: hamburger + slide-out drawer (no hover)
+- `overflow-x-hidden` on main content (`dashboard-shell-client.tsx`) — fixes extra horizontal scrollbar on tasks page
+
+### Profile & activity
+
+- **Telegram connect card** — compact single-row banner on profile (admin + member), not a large box
+- **`ProfileActivityPreview`** — timeline-style recent activity on member profile (limited items, “View all” link)
+- **Member Activity page** (`/member/activity`) — full personal activity feed via `getPersonalActivityFeed`
+- **Activity feed redesign** (`components/activity/activity-feed.tsx`):
+  - Two-column layout: timeline (left) + sticky right rail (search, type filter, time period, breakdown)
+  - Breakdown panel — clickable event-type filters with counts
+  - **Time period filter**: All time / This week / This month / Last 3 months
+  - Row layout: project chip + timestamps pinned right
+- Activity remains on `/admin/activity` and `/team-lead/activity` (same `ActivityFeed` component)
+
+### Admin teams — manage members dialog
+
+- Stable ordering: current members → unassigned → on other teams (alphabetical within each group)
+- Search filter; badges for “Member” and “In {TeamName}”
+- Single scroll on member list (`max-h-[55vh]`); Cancel/Save always visible at bottom
+
+### Admin projects — actions menu
+
+- Pause / Resume / Archive / Unarchive as **icon-only** buttons
+- Premium hover tooltip per action (`IconAction` in `project-actions-menu.tsx`)
+
+### Notifications
+
+- **Bell preview** — last 10 notifications on open; background poll uses `limit=0` for unread count only
+- **Admin activity notifications** (migration `016_admin_activity_notifications.sql`):
+  - New types: `task_submitted`, `task_completed`, `task_created`
+  - `notify_admins()` helper — all admins notified (actor excluded)
+  - Trigger on status change: submit for review, task completed
+  - Trigger on task insert: new task created
+- UI metadata in `lib/notifications/notification-meta.ts` (admin-facing verbs/icons)
+- **Setup:** run `016_admin_activity_notifications.sql` in Supabase SQL Editor
+
+### Dropdown / select styling
+
+- `components/ui/select.tsx` — project blue theme for hover, selected, and check indicator (light + dark)
+
+### Navigation updates
+
+- Sidebar **Activity** link (admin / team lead / member) — dedicated activity pages
+- Notifications bell in header (all roles)
+
+### Files created / modified (Phase 9)
+
+**New files:**
+- `components/members/profile-activity-preview.tsx`
+- `lib/activity/build-feed.ts` — `buildPersonalActivityFeed`, `unwrapRelation`
+- `lib/data/activity-feed.ts` — `getPersonalActivityFeed`
+- `app/(dashboard)/member/activity/page.tsx`
+- `supabase/migrations/016_admin_activity_notifications.sql`
+
+**Key modified files:**
+- `app/globals.css`, `components/ui/badge.tsx`, `components/ui/button.tsx`, `components/ui/select.tsx`
+- `components/layout/sidebar.tsx`, `components/layout/dashboard-shell-client.tsx`, `components/layout/notification-bell.tsx`
+- `components/activity/activity-feed.tsx`
+- `components/admin/manage-team-members-dialog.tsx`, `components/admin/teams-list.tsx`, `components/admin/project-actions-menu.tsx`
+- `components/telegram/telegram-connect-card.tsx`
+- `components/members/member-profile-view.tsx`, `lib/data/member-profile.ts`
+- `lib/notifications/notification-meta.ts`, `types/database.ts`
+- `app/api/notifications/route.ts` — `limit` query param
+
+### Dev / ops notes
+
+- Corrupted `.next` cache (disk full / OneDrive) can cause 404s on routes — delete `.next` and restart `npm run dev`
+- Git repo in OneDrive can block `git gc` during commit; commit may still succeed — prefer project outside OneDrive for fewer lock issues
+
+---
+
+*Last updated: Phase 9 — dark mode, sidebar rail, activity feed (period filter + breakdown), admin team dialog, project action tooltips, admin notification types (016), select blue styling, profile activity preview, member activity page.*

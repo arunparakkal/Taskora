@@ -1,9 +1,9 @@
 "use client";
 
-import { LayoutGrid, LayoutList } from "lucide-react";
+import { Columns3, LayoutGrid, LayoutList } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type ViewMode = "list" | "card";
+export type ViewMode = "list" | "card" | "board";
 
 export function ViewModeToggle({
   value,
@@ -50,6 +50,20 @@ export function ViewModeToggle({
       >
         <LayoutGrid className="h-4 w-4" />
         <span className="hidden sm:inline">Cards</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("board")}
+        className={cn(
+          "inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors",
+          value === "board"
+            ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100"
+            : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+        )}
+        aria-pressed={value === "board"}
+      >
+        <Columns3 className="h-4 w-4" />
+        <span className="hidden sm:inline">Board</span>
       </button>
     </div>
   );

@@ -209,9 +209,23 @@ export function TeamLeadMemberProfileView({
               <CapacityBadge capacity={data.capacityDisplay} />
             </div>
             <div className="flex justify-between">
+              <span className="text-slate-500">Load points</span>
+              <span className="font-medium text-slate-900 tabular-nums">
+                {workload.loadPoints}
+              </span>
+            </div>
+            {workload.teamAverageLoad > 0 && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">Team average</span>
+                <span className="font-medium text-slate-900 tabular-nums">
+                  {workload.teamAverageLoad}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between">
               <span className="text-slate-500">Active tasks</span>
               <span className="font-medium text-slate-900">
-                {workload.activeTasks}/{workload.capacity}
+                {workload.activeTasks}
               </span>
             </div>
             <div className="flex justify-between">
@@ -239,10 +253,8 @@ export function TeamLeadMemberProfileView({
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Slots free</span>
-              <span className="font-medium text-slate-900">
-                {Math.max(workload.availability, 0)}
-              </span>
+              <span className="text-slate-500">Workload status</span>
+              <WorkloadBadge status={workload.status} />
             </div>
             <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
               {workload.recommendation}

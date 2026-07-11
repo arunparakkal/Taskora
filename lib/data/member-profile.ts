@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getMemberTeamIds, getProjects, getTasks } from "@/lib/data/queries";
-import { getLedTeamIds } from "@/lib/data/team-lead";
+import { getLedTeamIds, getTeamMemberWorkloads } from "@/lib/data/team-lead";
 import {
   computeMemberPerformance,
   type MemberPerformance,
@@ -214,15 +214,22 @@ export async function getMemberProfile(
     teamThroughputBaseline: 0,
   });
 
-  const workload = calculateMemberWorkload(
-    perfTasks.map((t) => ({
-      assignee_id: t.assignee_id,
-      status: t.status,
-      priority: t.priority,
-      due_date: t.due_date,
-    })),
-    memberId
-  );
+  const workloadInputs = perfTasks.map((t) => ({
+    assignee_id: t.assignee_id,
+    status: t.status,
+    priority: t.priority,
+    due_date: t.due_date,
+  }));
+
+  let workload: MemberWorkload;
+  if (teamIds.length > 0) {
+    const teamWorkloads = await getTeamMemberWorkloads(teamIds[0]);
+    workload =
+      teamWorkloads[memberId] ??
+      calculateMemberWorkload(workloadInputs, memberId);
+  } else {
+    workload = calculateMemberWorkload(workloadInputs, memberId);
+  }
 
   const taskStats = {
     total: allTasks.length,

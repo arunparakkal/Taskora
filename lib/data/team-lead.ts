@@ -293,10 +293,10 @@ export async function getTeamLeadAvailability(
   }
 
   members.sort((a, b) => {
-    if (b.workload.availability !== a.workload.availability) {
-      return b.workload.availability - a.workload.availability;
+    if (a.workload.loadPoints !== b.workload.loadPoints) {
+      return a.workload.loadPoints - b.workload.loadPoints;
     }
-    return a.workload.score - b.workload.score;
+    return a.workload.overdueTasks - b.workload.overdueTasks;
   });
 
   const allWorkloads = Object.fromEntries(

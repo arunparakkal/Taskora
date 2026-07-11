@@ -223,7 +223,7 @@ export default async function TeamLeadDashboardPage() {
 
           <Card className="border-slate-200 shadow-sm lg:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">Team capacity</CardTitle>
+              <CardTitle className="text-base">Team workload</CardTitle>
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/team-lead/team">View all</Link>
               </Button>
@@ -261,7 +261,11 @@ export default async function TeamLeadDashboardPage() {
                             {member.full_name}
                           </p>
                           <p className="truncate text-xs text-slate-500">
-                            {workload.activeTasks}/{workload.capacity} active · {teamName}
+                            Load {workload.loadPoints}
+                            {workload.teamAverageLoad > 0 && (
+                              <> · team avg {workload.teamAverageLoad}</>
+                            )}{" "}
+                            · {teamName}
                           </p>
                         </div>
                         <WorkloadBadge status={workload.status} />

@@ -213,11 +213,15 @@ export function CreateTeamLeadTaskDialog({
                     {suggestedMember.full_name || suggestedMember.email}
                     {memberWorkloads[suggestedMember.id] && (
                       <span className="ml-2 text-emerald-700">
-                        ({memberWorkloads[suggestedMember.id].availability} slot
-                        {memberWorkloads[suggestedMember.id].availability !== 1
-                          ? "s"
-                          : ""}{" "}
-                        free)
+                        (load {memberWorkloads[suggestedMember.id].loadPoints}
+                        {memberWorkloads[suggestedMember.id].teamAverageLoad > 0 && (
+                          <>
+                            {" "}
+                            · team avg{" "}
+                            {memberWorkloads[suggestedMember.id].teamAverageLoad}
+                          </>
+                        )}
+                        )
                       </span>
                     )}
                   </div>
@@ -258,7 +262,7 @@ export function CreateTeamLeadTaskDialog({
                   </Select>
                 </IconSelectTrigger>
                 <p className="text-xs text-slate-400">
-                  Sorted by availability — members with free capacity appear first
+                  Sorted by load — members with lower load appear first
                 </p>
                 <FormFieldError message={errors.assignee_id?.message} />
               </div>

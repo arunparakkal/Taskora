@@ -11,6 +11,7 @@ import {
   Gauge,
   History,
   UserCircle,
+  Flame,
 } from "lucide-react";
 import type { Profile, AppRole } from "@/types/database";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,7 @@ const teamLeadNav: NavItem[] = [
 const memberNav: NavItem[] = [
   { label: "My Tasks", href: "/member/tasks", icon: CheckSquare },
   { label: "My Projects", href: "/member/projects", icon: FolderKanban },
+  { label: "My Habits", href: "/member/habits", icon: Flame },
   { label: "My Performance", href: "/member/performance", icon: Gauge },
   { label: "Activity", href: "/member/activity", icon: History },
   { label: "My Profile", href: "/member/profile", icon: UserCircle },

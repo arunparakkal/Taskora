@@ -3,6 +3,32 @@ export type TaskStatus = "todo" | "in_progress" | "review" | "rework" | "done";
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 export type ProjectStatus = "active" | "paused" | "archived";
 export type MemberLeaveStatus = "active" | "on_leave" | "partial";
+export type HabitFrequency = "daily" | "weekdays" | "weekly" | "custom";
+
+export interface Habit {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  icon: string;
+  color: string;
+  frequency: HabitFrequency;
+  days_of_week: number[];
+  target_value: number | null;
+  target_unit: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HabitCompletion {
+  id: string;
+  habit_id: string;
+  user_id: string;
+  completed_on: string;
+  current_value: number;
+  created_at: string;
+}
 
 export interface Profile {
   id: string;
@@ -198,6 +224,23 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Omit<PerformanceSnapshot, "id">>;
+      };
+      habits: {
+        Row: Habit;
+        Insert: Omit<Habit, "id" | "created_at" | "updated_at"> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<Habit, "id">>;
+      };
+      habit_completions: {
+        Row: HabitCompletion;
+        Insert: Omit<HabitCompletion, "id" | "created_at"> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<Omit<HabitCompletion, "id">>;
       };
     };
   };

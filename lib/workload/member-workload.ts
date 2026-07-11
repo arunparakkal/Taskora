@@ -11,15 +11,13 @@ export type MemberWorkload = {
   activeTasks: number;
   overdueTasks: number;
   dueThisWeek: number;
-  score: number;
-  capacity: number;
-  availability: number;
+  loadPoints: number;
+  teamAverageLoad: number;
+  loadVsTeamPercent: number | null;
   status: WorkloadStatus;
   statusLabel: string;
   recommendation: string;
 };
-
-export const DEFAULT_MEMBER_CAPACITY = 5;
 
 export const WORKLOAD_STATUS_LABELS: Record<WorkloadStatus, string> = {
   available: "Available",
@@ -35,18 +33,18 @@ export type WorkloadTaskInput = {
   due_date: string | null;
 };
 
-const PRIORITY_WEIGHT: Record<TaskPriority, number> = {
-  low: 0.5,
-  medium: 1,
-  high: 2,
-  urgent: 3,
+const STATUS_LOAD: Partial<Record<TaskStatus, number>> = {
+  todo: 0.5,
+  in_progress: 2,
+  review: 1.5,
+  rework: 1.5,
 };
 
-const STATUS_SCORE: Partial<Record<TaskStatus, number>> = {
-  todo: 1,
-  in_progress: 2,
-  rework: 2,
-  review: 1.5,
+const PRIORITY_BONUS: Record<TaskPriority, number> = {
+  low: 0,
+  medium: 0,
+  high: 0.75,
+  urgent: 1.5,
 };
 
 function startOfDay(date: Date) {
@@ -73,86 +71,167 @@ function isActiveStatus(status: string) {
   return status === "in_progress" || status === "review" || status === "rework";
 }
 
-function resolveStatus(
-  activeTasks: number,
-  capacity: number
-): WorkloadStatus {
-  const availability = capacity - activeTasks;
-  if (activeTasks > capacity) return "overloaded";
-  const freeRatio = availability / capacity;
-  if (freeRatio >= 0.4) return "available";
-  if (freeRatio >= 0.2) return "moderate";
-  return "at_capacity";
+function roundLoad(value: number) {
+  return Math.round(value * 10) / 10;
 }
 
-function recommendationFor(status: WorkloadStatus, availability: number) {
+export function taskLoadPoints(task: WorkloadTaskInput): number {
+  const statusLoad = STATUS_LOAD[task.status as TaskStatus] ?? 0.5;
+  const priorityBonus =
+    PRIORITY_BONUS[task.priority as TaskPriority] ?? 0;
+  let points = statusLoad + priorityBonus;
+  if (isOverdue(task.due_date, task.status)) {
+    points += 1;
+  }
+  return points;
+}
+
+function resolveStatus(
+  loadPoints: number,
+  teamAverageLoad: number
+): WorkloadStatus {
+  if (teamAverageLoad > 0) {
+    const ratio = loadPoints / teamAverageLoad;
+    if (ratio <= 0.8) return "available";
+    if (ratio <= 1.2) return "moderate";
+    if (ratio <= 1.5) return "at_capacity";
+    return "overloaded";
+  }
+
+  if (loadPoints <= 4) return "available";
+  if (loadPoints <= 8) return "moderate";
+  if (loadPoints <= 12) return "at_capacity";
+  return "overloaded";
+}
+
+function loadVsTeamPercent(
+  loadPoints: number,
+  teamAverageLoad: number
+): number | null {
+  if (teamAverageLoad <= 0) return null;
+  return Math.round(((loadPoints - teamAverageLoad) / teamAverageLoad) * 100);
+}
+
+function recommendationFor(
+  status: WorkloadStatus,
+  loadPoints: number,
+  teamAverageLoad: number,
+  loadVsTeam: number | null
+) {
+  const loadLabel = `Load ${loadPoints}`;
+  const teamLabel =
+    teamAverageLoad > 0 ? ` · team avg ${teamAverageLoad}` : "";
+  const comparison =
+    loadVsTeam !== null
+      ? loadVsTeam < 0
+        ? ` (${Math.abs(loadVsTeam)}% below team avg)`
+        : loadVsTeam > 0
+          ? ` (${loadVsTeam}% above team avg)`
+          : " (at team avg)"
+      : "";
+
   switch (status) {
     case "available":
-      return `Good fit for new tasks (${availability} slot${availability !== 1 ? "s" : ""} free)`;
+      return `${loadLabel}${teamLabel}${comparison} — good fit for new tasks`;
     case "moderate":
-      return "Can take work, but monitor load";
+      return `${loadLabel}${teamLabel}${comparison} — can take work, monitor load`;
     case "at_capacity":
-      return "At limit — assign only if urgent";
+      return `${loadLabel}${teamLabel}${comparison} — assign only if urgent`;
     case "overloaded":
-      return "Overloaded — avoid new assignments";
+      return `${loadLabel}${teamLabel}${comparison} — avoid new assignments`;
   }
 }
 
-export function calculateMemberWorkload(
+type RawMemberMetrics = {
+  openTasks: number;
+  activeTasks: number;
+  overdueTasks: number;
+  dueThisWeek: number;
+  loadPoints: number;
+};
+
+function computeRawMetrics(
   tasks: WorkloadTaskInput[],
-  memberId: string,
-  capacity = DEFAULT_MEMBER_CAPACITY
-): MemberWorkload {
+  memberId: string
+): RawMemberMetrics {
   const memberTasks = tasks.filter(
     (t) => t.assignee_id === memberId && t.status !== "done"
   );
 
-  let score = 0;
+  let loadPoints = 0;
   let activeTasks = 0;
   let overdueTasks = 0;
   let dueThisWeek = 0;
 
   for (const task of memberTasks) {
-    const priority = task.priority as TaskPriority;
-    score += STATUS_SCORE[task.status as TaskStatus] ?? 1;
-    score += PRIORITY_WEIGHT[priority] ?? 1;
+    loadPoints += taskLoadPoints(task);
 
     if (isActiveStatus(task.status)) activeTasks++;
-    if (isOverdue(task.due_date, task.status)) {
-      overdueTasks++;
-      score += 2;
-    }
-    if (isDueThisWeek(task.due_date, task.status)) {
-      dueThisWeek++;
-      score += 1;
-    }
+    if (isOverdue(task.due_date, task.status)) overdueTasks++;
+    if (isDueThisWeek(task.due_date, task.status)) dueThisWeek++;
   }
-
-  const availability = capacity - activeTasks;
-  const status = resolveStatus(activeTasks, capacity);
 
   return {
     openTasks: memberTasks.length,
     activeTasks,
     overdueTasks,
     dueThisWeek,
-    score: Math.round(score * 10) / 10,
-    capacity,
-    availability,
+    loadPoints: roundLoad(loadPoints),
+  };
+}
+
+function finalizeWorkload(
+  metrics: RawMemberMetrics,
+  teamAverageLoad: number
+): MemberWorkload {
+  const loadVsTeam = loadVsTeamPercent(metrics.loadPoints, teamAverageLoad);
+  const status = resolveStatus(metrics.loadPoints, teamAverageLoad);
+
+  return {
+    ...metrics,
+    teamAverageLoad: roundLoad(teamAverageLoad),
+    loadVsTeamPercent: loadVsTeam,
     status,
     statusLabel: WORKLOAD_STATUS_LABELS[status],
-    recommendation: recommendationFor(status, Math.max(availability, 0)),
+    recommendation: recommendationFor(
+      status,
+      metrics.loadPoints,
+      roundLoad(teamAverageLoad),
+      loadVsTeam
+    ),
   };
+}
+
+export function calculateMemberWorkload(
+  tasks: WorkloadTaskInput[],
+  memberId: string,
+  teamAverageLoad = 0
+): MemberWorkload {
+  const metrics = computeRawMetrics(tasks, memberId);
+  return finalizeWorkload(metrics, teamAverageLoad);
 }
 
 export function buildMemberWorkloads(
   tasks: WorkloadTaskInput[],
-  memberIds: string[],
-  capacity = DEFAULT_MEMBER_CAPACITY
+  memberIds: string[]
 ): Record<string, MemberWorkload> {
+  const rawByMember = new Map<string, RawMemberMetrics>();
+  for (const memberId of memberIds) {
+    rawByMember.set(memberId, computeRawMetrics(tasks, memberId));
+  }
+
+  const teamAverageLoad =
+    memberIds.length > 0
+      ? roundLoad(
+          [...rawByMember.values()].reduce((sum, m) => sum + m.loadPoints, 0) /
+            memberIds.length
+        )
+      : 0;
+
   const workloads: Record<string, MemberWorkload> = {};
   for (const memberId of memberIds) {
-    workloads[memberId] = calculateMemberWorkload(tasks, memberId, capacity);
+    const metrics = rawByMember.get(memberId)!;
+    workloads[memberId] = finalizeWorkload(metrics, teamAverageLoad);
   }
   return workloads;
 }
@@ -167,10 +246,13 @@ export function sortMembersByAvailability<T extends { id: string }>(
     if (!wa && !wb) return 0;
     if (!wa) return 1;
     if (!wb) return -1;
-    if (wb.availability !== wa.availability) {
-      return wb.availability - wa.availability;
+    if (wa.loadPoints !== wb.loadPoints) {
+      return wa.loadPoints - wb.loadPoints;
     }
-    return wa.score - wb.score;
+    if (wa.overdueTasks !== wb.overdueTasks) {
+      return wa.overdueTasks - wb.overdueTasks;
+    }
+    return wa.activeTasks - wb.activeTasks;
   });
 }
 
@@ -192,4 +274,15 @@ export function summarizeAvailability(
   }
 
   return summary;
+}
+
+export function formatLoadVsTeam(loadVsTeamPercent: number | null): string {
+  if (loadVsTeamPercent === null) return "";
+  if (loadVsTeamPercent < 0) {
+    return `${Math.abs(loadVsTeamPercent)}% lighter than team avg`;
+  }
+  if (loadVsTeamPercent > 0) {
+    return `${loadVsTeamPercent}% heavier than team avg`;
+  }
+  return "At team average";
 }

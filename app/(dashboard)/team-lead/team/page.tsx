@@ -47,27 +47,27 @@ export default async function TeamLeadTeamPage() {
   return (
     <PageShell
       title="My Team"
-      description="Member workload — sorted by who has capacity for new tasks"
+      description="Member workload — sorted by lowest load first"
       stats={
         <StatsGrid>
           <StatCard
             label="Available"
             value={capacitySummary.available}
-            subtext="Ready for new tasks"
+            subtext="Below team average load"
             icon={UsersRound}
             accent="green"
           />
           <StatCard
             label="Moderate"
             value={capacitySummary.moderate}
-            subtext="Can take more with care"
+            subtext="Near team average load"
             icon={UsersRound}
             accent="orange"
           />
           <StatCard
             label="At Capacity"
             value={capacitySummary.atCapacity}
-            subtext="Limited slots left"
+            subtext="Above team average load"
             icon={ListTodo}
             accent="purple"
           />
@@ -140,10 +140,10 @@ export default async function TeamLeadTeamPage() {
                           <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
                             <TableHead>Member</TableHead>
                             <TableHead>Role</TableHead>
-                            <TableHead className="text-right">Active</TableHead>
+                            <TableHead className="text-right">Load</TableHead>
                             <TableHead className="text-right">Open</TableHead>
                             <TableHead className="text-right">Overdue</TableHead>
-                            <TableHead>Capacity</TableHead>
+                            <TableHead className="text-right">Team avg</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Profile</TableHead>
                           </TableRow>
@@ -154,10 +154,13 @@ export default async function TeamLeadTeamPage() {
                               activeTasks: 0,
                               openTasks: 0,
                               overdueTasks: 0,
-                              capacity: 5,
-                              availability: 5,
+                              dueThisWeek: 0,
+                              loadPoints: 0,
+                              teamAverageLoad: 0,
+                              loadVsTeamPercent: null,
                               status: "available" as const,
                               statusLabel: "Available",
+                              recommendation: "No open tasks",
                             };
                             return (
                               <TableRow key={member.id} className="group">
@@ -183,8 +186,8 @@ export default async function TeamLeadTeamPage() {
                                 <TableCell>
                                   <RoleBadge role={member.role} />
                                 </TableCell>
-                                <TableCell className="text-right text-slate-700">
-                                  {workload.activeTasks}/{workload.capacity}
+                                <TableCell className="text-right text-slate-700 tabular-nums">
+                                  {workload.loadPoints}
                                 </TableCell>
                                 <TableCell className="text-right text-slate-700">
                                   {workload.openTasks}
@@ -198,12 +201,10 @@ export default async function TeamLeadTeamPage() {
                                     "0"
                                   )}
                                 </TableCell>
-                                <TableCell className="text-sm text-slate-600">
-                                  {Math.max(workload.availability, 0)} slot
-                                  {Math.max(workload.availability, 0) !== 1
-                                    ? "s"
-                                    : ""}{" "}
-                                  free
+                                <TableCell className="text-right text-sm text-slate-600 tabular-nums">
+                                  {workload.teamAverageLoad > 0
+                                    ? workload.teamAverageLoad
+                                    : "—"}
                                 </TableCell>
                                 <TableCell>
                                   <WorkloadBadge status={workload.status} />

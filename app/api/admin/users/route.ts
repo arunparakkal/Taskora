@@ -1,32 +1,45 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidateUsersList } from "@/lib/data/queries";
 import { createUserSchema } from "@/lib/validations/schemas";
+import { requireApiRole, isApiAuthError } from "@/lib/auth/require-role";
+import { logAdminAction } from "@/lib/audit/log-admin-action";
+import { handleApiError, generateRequestId } from "@/lib/api/handle-error";
+import { uploadUserAvatar } from "@/lib/avatars/upload";
+
+async function parseCreateUserRequest(request: Request): Promise<{
+  fields: Record<string, unknown>;
+  avatarFile: File | null;
+}> {
+  const contentType = request.headers.get("content-type") ?? "";
+
+  if (contentType.includes("multipart/form-data")) {
+    const form = await request.formData();
+    const avatar = form.get("avatar");
+    return {
+      fields: {
+        full_name: String(form.get("full_name") ?? ""),
+        email: String(form.get("email") ?? ""),
+        password: String(form.get("password") ?? ""),
+        role: String(form.get("role") ?? ""),
+      },
+      avatarFile: avatar instanceof File && avatar.size > 0 ? avatar : null,
+    };
+  }
+
+  const body = (await request.json()) as Record<string, unknown>;
+  return { fields: body, avatarFile: null };
+}
 
 export async function POST(request: Request) {
+  const requestId = generateRequestId();
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireApiRole(["admin"]);
+    if (isApiAuthError(auth)) return auth.error;
+    const { supabase, user } = auth;
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const body = await request.json();
-    const parsed = createUserSchema.safeParse(body);
+    const { fields, avatarFile } = await parseCreateUserRequest(request);
+    const parsed = createUserSchema.safeParse(fields);
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -67,37 +80,70 @@ export async function POST(request: Request) {
       );
     }
 
-    if (newUser.user) {
-      const { error: profileError } = await adminClient.from("profiles").upsert(
-        {
-          id: newUser.user.id,
-          email: normalizedEmail,
-          full_name: normalizedName,
-          role,
-        },
-        { onConflict: "id" }
+    if (!newUser.user) {
+      return NextResponse.json(
+        { error: "User creation returned no user" },
+        { status: 500 }
       );
+    }
 
-      if (profileError) {
-        console.error("Profile upsert failed:", {
-          message: profileError.message,
-          code: profileError.code,
-          details: profileError.details,
-          hint: profileError.hint,
-          userId: newUser.user.id,
-          normalizedEmail,
-        });
+    let avatarUrl: string | null = null;
+    if (avatarFile) {
+      const uploaded = await uploadUserAvatar(
+        adminClient,
+        newUser.user.id,
+        avatarFile
+      );
+      if ("error" in uploaded) {
         return NextResponse.json(
-          { error: `User created but profile sync failed: ${profileError.message}` },
+          {
+            error: `User created but photo upload failed: ${uploaded.error}`,
+          },
           { status: 500 }
         );
       }
+      avatarUrl = uploaded.url;
+    }
+
+    const { error: profileError } = await adminClient.from("profiles").upsert(
+      {
+        id: newUser.user.id,
+        email: normalizedEmail,
+        full_name: normalizedName,
+        role,
+        ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+      },
+      { onConflict: "id" }
+    );
+
+    if (profileError) {
+      console.error("Profile upsert failed:", {
+        message: profileError.message,
+        code: profileError.code,
+        details: profileError.details,
+        hint: profileError.hint,
+        userId: newUser.user.id,
+        normalizedEmail,
+      });
+      return NextResponse.json(
+        { error: `User created but profile sync failed: ${profileError.message}` },
+        { status: 500 }
+      );
     }
 
     revalidateUsersList();
-    return NextResponse.json({ success: true, userId: newUser.user?.id });
+
+    await logAdminAction(supabase, {
+      eventType: "user.created",
+      actorId: user.id,
+      targetType: "user",
+      targetId: newUser.user.id,
+      summary: `User "${normalizedName}" created`,
+      detail: `${normalizedEmail} · ${role}`,
+    });
+
+    return NextResponse.json({ success: true, userId: newUser.user.id });
   } catch (error) {
-    console.error("Create user route crashed:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return handleApiError(error, { route: "POST /api/admin/users", requestId });
   }
 }

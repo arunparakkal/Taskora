@@ -10,8 +10,10 @@ import {
   getTelegramBotUsername,
   isTelegramConfigured,
 } from "@/lib/telegram/env";
+import { handleApiError, generateRequestId } from "@/lib/api/handle-error";
 
 export async function GET() {
+  const requestId = generateRequestId();
   try {
     const supabase = await createClient();
     const {
@@ -38,12 +40,13 @@ export async function GET() {
       linkedAt: profile?.telegram_linked_at ?? null,
       notifyEnabled: profile?.telegram_notify_enabled !== false,
     });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, { route: "GET /api/telegram/link", requestId });
   }
 }
 
 export async function POST() {
+  const requestId = generateRequestId();
   try {
     if (!isTelegramConfigured()) {
       return NextResponse.json(
@@ -80,12 +83,13 @@ export async function POST() {
     }
 
     return NextResponse.json({ linkUrl, expiresAt });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, { route: "POST /api/telegram/link", requestId });
   }
 }
 
 export async function DELETE() {
+  const requestId = generateRequestId();
   try {
     const supabase = await createClient();
     const {
@@ -98,12 +102,13 @@ export async function DELETE() {
 
     await unlinkTelegramChat(user.id);
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, { route: "DELETE /api/telegram/link", requestId });
   }
 }
 
 export async function PATCH(request: Request) {
+  const requestId = generateRequestId();
   try {
     const supabase = await createClient();
     const {
@@ -121,7 +126,7 @@ export async function PATCH(request: Request) {
 
     await setTelegramNotifyEnabled(user.id, body.notifyEnabled);
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, { route: "PATCH /api/telegram/link", requestId });
   }
 }

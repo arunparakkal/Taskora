@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { teamLeadCanViewMember } from "@/lib/data/member-profile";
 import { z } from "zod";
+import { requireApiRole, isApiAuthError } from "@/lib/auth/require-role";
+import { handleApiError, generateRequestId } from "@/lib/api/handle-error";
 
 const updateMemberMetaSchema = z.object({
   skills: z.array(z.string().max(80)).max(20).optional(),
@@ -12,26 +13,12 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = generateRequestId();
   try {
     const { id: memberId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "team_lead" && profile?.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const auth = await requireApiRole(["team_lead", "admin"]);
+    if (isApiAuthError(auth)) return auth.error;
+    const { supabase, user } = auth;
 
     const canView = await teamLeadCanViewMember(user.id, memberId);
     if (!canView) {
@@ -71,7 +58,10 @@ export async function PATCH(
     }
 
     return NextResponse.json({ success: true, profile: data });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, {
+      route: "PATCH /api/team-lead/members/[id]",
+      requestId,
+    });
   }
 }

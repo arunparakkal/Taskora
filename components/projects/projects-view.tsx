@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Calendar, ChevronRight, FolderKanban, Search } from "lucide-react";
 import { ProjectActionsMenu } from "@/components/admin/project-actions-menu";
 import { EmptyState } from "@/components/layout/dashboard-shell";
@@ -11,6 +11,8 @@ import { ProjectProgressBar } from "@/components/projects/project-progress-bar";
 import { Badge } from "@/components/ui/badge";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
 import { DataTableCard } from "@/components/shared/data-table-card";
+import { LinkPagination } from "@/components/shared/link-pagination";
+import { SearchParamInput } from "@/components/shared/search-param-input";
 import {
   ViewModeToggle,
   type ViewMode,
@@ -41,6 +43,12 @@ function matchesProject(project: ProjectWithDetails, query: string) {
   );
 }
 
+export interface ProjectsViewPagination {
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
 export function ProjectsView({
   projects,
   detailPathPrefix,
@@ -50,6 +58,7 @@ export function ProjectsView({
   emptyDescription = "Projects will appear here once they are created.",
   myTaskCounts,
   adminMode = false,
+  pagination,
 }: {
   projects: ProjectWithDetails[];
   detailPathPrefix: string;
@@ -59,9 +68,13 @@ export function ProjectsView({
   emptyDescription?: string;
   myTaskCounts?: Record<string, number>;
   adminMode?: boolean;
+  /** When provided, `projects` is a single server-fetched page (see `TasksView`'s equivalent prop for details). */
+  pagination?: ProjectsViewPagination;
 }) {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialQ = searchParams.get("q") ?? "";
+  const serverPaginated = Boolean(pagination);
   const [query, setQuery] = useState(initialQ);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
@@ -81,12 +94,22 @@ export function ProjectsView({
     localStorage.setItem(viewStorageKey, mode);
   }
 
-  const filteredProjects = useMemo(
-    () => projects.filter((p) => matchesProject(p, query)),
-    [projects, query]
-  );
+  function buildPageHref(targetPage: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (targetPage > 1) params.set("page", String(targetPage));
+    else params.delete("page");
+    const qs = params.toString();
+    return qs ? `${pathname}?${qs}` : pathname;
+  }
 
-  if (projects.length === 0) {
+  const filteredProjects = useMemo(() => {
+    if (serverPaginated) return projects;
+    return projects.filter((p) => matchesProject(p, query));
+  }, [projects, query, serverPaginated]);
+
+  const activeSearchTerm = serverPaginated ? initialQ : query;
+
+  if (projects.length === 0 && !activeSearchTerm) {
     return (
       <EmptyState
         icon={FolderKanban}
@@ -98,18 +121,25 @@ export function ProjectsView({
 
   return (
     <div className="space-y-6">
-      <Card className="border-slate-200 p-4 shadow-sm">
+      <Card className="border-slate-200 p-4 shadow-sm dark:border-slate-800">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative min-w-0 flex-1 sm:max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+          {serverPaginated ? (
+            <SearchParamInput
+              className="relative min-w-0 flex-1 sm:max-w-md"
               placeholder={searchPlaceholder}
-              className="h-10 border-slate-200 bg-slate-50 pl-10"
             />
-          </div>
+          ) : (
+            <div className="relative min-w-0 flex-1 sm:max-w-md">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={searchPlaceholder}
+                className="h-10 border-slate-200 bg-slate-50 pl-10"
+              />
+            </div>
+          )}
           <ViewModeToggle value={viewMode} onChange={handleViewChange} />
         </div>
       </Card>
@@ -118,7 +148,7 @@ export function ProjectsView({
         <EmptyState
           icon={Search}
           title="No projects found"
-          description={`No projects match "${query}". Try a different search.`}
+          description={`No projects match "${activeSearchTerm}". Try a different search.`}
         />
       ) : viewMode === "card" ? (
         <div>
@@ -139,7 +169,20 @@ export function ProjectsView({
           </div>
         </div>
       ) : (
-        <DataTableCard total={filteredProjects.length}>
+        <DataTableCard
+          total={pagination?.total ?? filteredProjects.length}
+          pagination={
+            pagination ? (
+              <LinkPagination
+                page={pagination.page}
+                pageSize={pagination.pageSize}
+                total={pagination.total}
+                itemLabel="project"
+                buildHref={buildPageHref}
+              />
+            ) : undefined
+          }
+        >
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">

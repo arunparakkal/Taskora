@@ -6,7 +6,7 @@ import { UsersList } from "@/components/admin/users-list";
 import { StatCard, StatsGrid } from "@/components/admin/stat-card";
 import { AdminPageSkeleton } from "@/app/(dashboard)/admin/loading";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
-import { getUsers } from "@/lib/data/queries";
+import { getUsers, getUsersPage } from "@/lib/data/queries";
 import type { AppRole } from "@/types/database";
 
 function countByRole(users: { role: AppRole }[]) {
@@ -21,13 +21,23 @@ function countByRole(users: { role: AppRole }[]) {
   return counts;
 }
 
-async function AdminUsersContent() {
-  const [users, currentProfile] = await Promise.all([
+async function AdminUsersContent({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string }>;
+}) {
+  const params = await searchParams;
+  const search = params.q ?? "";
+  const page = Math.max(1, Number(params.page) || 1);
+
+  // Role counts still reflect the full org (not just the current page/search).
+  const [allUsers, currentProfile, usersPage] = await Promise.all([
     getUsers(),
     getCurrentProfile(),
+    getUsersPage({ page, search }),
   ]);
 
-  const roleCounts = countByRole(users);
+  const roleCounts = countByRole(allUsers);
 
   return (
     <PageShell
@@ -38,7 +48,7 @@ async function AdminUsersContent() {
         <StatsGrid>
           <StatCard
             label="Total Users"
-            value={users.length}
+            value={allUsers.length}
             subtext="Across your organization"
             icon={Users}
             accent="blue"
@@ -68,16 +78,27 @@ async function AdminUsersContent() {
       }
     >
       <Suspense fallback={null}>
-        <UsersList users={users} currentUserId={currentProfile?.id} />
+        <UsersList
+          users={usersPage.items}
+          currentUserId={currentProfile?.id}
+          page={usersPage.page}
+          pageSize={usersPage.pageSize}
+          total={usersPage.total}
+          search={search}
+        />
       </Suspense>
     </PageShell>
   );
 }
 
-export default function AdminUsersPage() {
+export default function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string }>;
+}) {
   return (
     <Suspense fallback={<AdminPageSkeleton />}>
-      <AdminUsersContent />
+      <AdminUsersContent searchParams={searchParams} />
     </Suspense>
   );
 }

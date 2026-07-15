@@ -38,6 +38,7 @@ import {
   IconTextarea,
   RequiredLabel,
 } from "@/components/shared/form-dialog-parts";
+import { AiAutofillButton } from "@/components/tasks/ai-autofill-button";
 import { createTaskSchema, type CreateTaskInput } from "@/lib/validations/schemas";
 import type { Profile, ProjectWithDetails } from "@/types/database";
 
@@ -58,6 +59,7 @@ export function CreateTaskDialog({
   const [assigneeValue, setAssigneeValue] = useState<string>("none");
   const [priorityValue, setPriorityValue] =
     useState<CreateTaskInput["priority"]>("medium");
+  const [assigneeReason, setAssigneeReason] = useState("");
 
   const initialProjectId = defaultProjectId ?? "";
 
@@ -86,9 +88,11 @@ export function CreateTaskDialog({
     setProjectValue(initialProjectId);
     setAssigneeValue("none");
     setPriorityValue("medium");
+    setAssigneeReason("");
   }
 
   const description = watch("description") ?? "";
+  const titleValue = watch("title") ?? "";
   const selectedProject = projects.find((p) => p.id === projectValue);
   const taskDueMin = selectedProject?.start_date ?? undefined;
   const taskDueMax = selectedProject?.due_date ?? undefined;
@@ -156,15 +160,49 @@ export function CreateTaskDialog({
           >
             <div className="min-h-0 flex-1 space-y-4 overflow-x-hidden overflow-y-auto px-6 py-4">
               <div className="space-y-2">
-                <RequiredLabel htmlFor="task_title">Title</RequiredLabel>
+                <div className="flex items-center justify-between gap-2">
+                  <RequiredLabel htmlFor="task_title">Title</RequiredLabel>
+                  <AiAutofillButton
+                    text={titleValue}
+                    projectStartDate={selectedProject?.start_date}
+                    projectDueDate={selectedProject?.due_date}
+                    assignees={users.map((u) => ({
+                      id: u.id,
+                      name: u.full_name || u.email || "Unknown",
+                      email: u.email,
+                    }))}
+                    onFilled={(fields) => {
+                      setValue("title", fields.title, { shouldValidate: true });
+                      setValue("description", fields.description ?? "", {
+                        shouldValidate: true,
+                      });
+                      setValue("priority", fields.priority, {
+                        shouldValidate: true,
+                      });
+                      setPriorityValue(fields.priority);
+                      setValue("due_date", fields.due_date ?? "", {
+                        shouldValidate: true,
+                      });
+                      const nextAssignee = fields.assignee_id || "";
+                      setValue("assignee_id", nextAssignee, {
+                        shouldValidate: true,
+                      });
+                      setAssigneeValue(nextAssignee || "none");
+                      setAssigneeReason(fields.assignee_reason ?? "");
+                    }}
+                  />
+                </div>
                 <IconInput
                   id="task_title"
                   icon={CheckSquare}
                   {...register("title")}
-                  placeholder="Implement login page"
+                  placeholder="create cart page… then click AI Fill"
                   className={fieldClass(!!errors.title)}
                   aria-invalid={!!errors.title}
                 />
+                <p className="text-xs text-slate-400">
+                  Real AI fixes spelling, expands the task, and suggests an assignee with a reason.
+                </p>
                 <FormFieldError message={errors.title?.message} />
               </div>
 
@@ -223,6 +261,12 @@ export function CreateTaskDialog({
                     </SelectContent>
                   </Select>
                 </IconSelectTrigger>
+                {assigneeReason && (
+                  <div className="rounded-lg border border-violet-200 bg-violet-50/70 px-3 py-2 text-xs text-violet-900">
+                    <span className="font-medium">Why AI chose them: </span>
+                    {assigneeReason}
+                  </div>
+                )}
                 <FormFieldError message={errors.assignee_id?.message} />
               </div>
 
@@ -253,9 +297,7 @@ export function CreateTaskDialog({
                 </div>
 
                 <div className="min-w-0 space-y-2">
-                  <RequiredLabel htmlFor="due_date" optional>
-                    Due Date
-                  </RequiredLabel>
+                  <RequiredLabel htmlFor="due_date">Due Date</RequiredLabel>
                   <IconInput
                     id="due_date"
                     icon={Calendar}

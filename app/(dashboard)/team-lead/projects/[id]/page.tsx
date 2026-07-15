@@ -30,6 +30,7 @@ import {
   userLeadsProjectTeam,
 } from "@/lib/data/team-lead";
 import { getProjectTaskActivity } from "@/lib/data/tasks";
+import { getTeamLeadPerformance } from "@/lib/data/performance";
 import { buildProjectSummary } from "@/lib/projects/summary";
 import { isProjectOpenForNewTasks } from "@/lib/projects/date-utils";
 import { formatDate } from "@/lib/utils";
@@ -53,13 +54,26 @@ export default async function TeamLeadProjectDetailPage({
     notFound();
   }
 
-  const [teamMembers, canManageTasks, memberWorkloads, recentActivity] =
-    await Promise.all([
+  const [
+    teamMembers,
+    canManageTasks,
+    memberWorkloads,
+    recentActivity,
+    performance,
+  ] = await Promise.all([
     getTeamMembersForProject(project.team_id),
     userLeadsProjectTeam(profile.id, project.id),
     getTeamMemberWorkloads(project.team_id),
     getProjectTaskActivity(id, 10),
+    getTeamLeadPerformance(profile.id, "month"),
   ]);
+
+  const memberPerformanceScores = Object.fromEntries(
+    performance.entries.map((entry) => [
+      entry.profile.id,
+      entry.performance.overall,
+    ])
+  );
 
   const isArchived = project.status === "archived";
   const summary = buildProjectSummary(tasks);
@@ -85,6 +99,8 @@ export default async function TeamLeadProjectDetailPage({
             projectOpenForTasks={projectOpenForTasks}
             teamMembers={teamMembers}
             memberWorkloads={memberWorkloads}
+            memberPerformanceScores={memberPerformanceScores}
+            excludeUserId={profile.id}
           />
         ) : undefined
       }

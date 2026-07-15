@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
 import { SessionSync } from "@/components/auth/session-sync";
+import { ChatMount } from "@/components/chat/chat-mount";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
@@ -14,8 +15,15 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Taskora — Project Management",
-  description: "Jira-like project management platform",
+  title: "Taskora — Manage Projects. Track Tasks. Deliver Faster.",
+  description:
+    "Taskora is a modern team productivity platform for project management, task workflows, collaboration, notifications, and performance insights.",
+  openGraph: {
+    title: "Taskora — Team Productivity Platform",
+    description:
+      "Manage projects, track tasks, and deliver faster with role-based workflows, dashboards, and performance insights.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -39,6 +47,7 @@ export default function RootLayout({
           <ToastProvider>
             <SessionSync />
             {children}
+            <ChatMount />
           </ToastProvider>
         </ThemeProvider>
       </body>

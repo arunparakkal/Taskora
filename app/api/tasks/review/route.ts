@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { reviewTaskSchema } from "@/lib/validations/schemas";
+import { handleApiError, generateRequestId } from "@/lib/api/handle-error";
 
 /**
  * Approve or reject a task awaiting review.
@@ -8,6 +9,7 @@ import { reviewTaskSchema } from "@/lib/validations/schemas";
  * activity-log comment, and assignee notification happen atomically.
  */
 export async function POST(request: Request) {
+  const requestId = generateRequestId();
   try {
     const supabase = await createClient();
     const {
@@ -41,7 +43,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true, task: data });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, { route: "POST /api/tasks/review", requestId });
   }
 }

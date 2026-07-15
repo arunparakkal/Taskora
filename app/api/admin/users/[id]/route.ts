@@ -6,29 +6,9 @@ import {
   updateUserRoleSchema,
   updateUserSchema,
 } from "@/lib/validations/schemas";
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  }
-
-  const { data: adminProfile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (adminProfile?.role !== "admin") {
-    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  }
-
-  return { supabase, user };
-}
+import { requireApiRole, isApiAuthError } from "@/lib/auth/require-role";
+import { logAdminAction } from "@/lib/audit/log-admin-action";
+import { handleApiError, generateRequestId } from "@/lib/api/handle-error";
 
 async function ensureNotLastAdmin(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -66,11 +46,12 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = generateRequestId();
   try {
     const { id } = await params;
-    const auth = await requireAdmin();
-    if ("error" in auth && auth.error) return auth.error;
-    const { supabase } = auth;
+    const auth = await requireApiRole(["admin"]);
+    if (isApiAuthError(auth)) return auth.error;
+    const { supabase, user } = auth;
 
     const { data: targetProfile } = await supabase
       .from("profiles")
@@ -123,6 +104,16 @@ export async function PATCH(
       });
 
       revalidateUsersList();
+
+      await logAdminAction(supabase, {
+        eventType: "user.role_changed",
+        actorId: user.id,
+        targetType: "user",
+        targetId: id,
+        summary: `Role changed for "${updated?.full_name ?? id}"`,
+        detail: `${targetProfile.role} → ${parsed.data.role}`,
+      });
+
       return NextResponse.json({ success: true, profile: updated });
     }
 
@@ -182,9 +173,25 @@ export async function PATCH(
     }
 
     revalidateUsersList();
+
+    await logAdminAction(supabase, {
+      eventType: "user.updated",
+      actorId: user.id,
+      targetType: "user",
+      targetId: id,
+      summary: `User "${normalizedName}" updated`,
+      detail:
+        targetProfile.role !== role
+          ? `${targetProfile.role} → ${role}`
+          : undefined,
+    });
+
     return NextResponse.json({ success: true, profile: updated });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, {
+      route: "PATCH /api/admin/users/[id]",
+      requestId,
+    });
   }
 }
 
@@ -192,10 +199,11 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = generateRequestId();
   try {
     const { id } = await params;
-    const auth = await requireAdmin();
-    if ("error" in auth && auth.error) return auth.error;
+    const auth = await requireApiRole(["admin"]);
+    if (isApiAuthError(auth)) return auth.error;
     const { supabase, user } = auth;
 
     if (user.id === id) {
@@ -207,7 +215,7 @@ export async function DELETE(
 
     const { data: targetProfile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, full_name, email")
       .eq("id", id)
       .single();
 
@@ -237,8 +245,21 @@ export async function DELETE(
     }
 
     revalidateUsersList();
+
+    await logAdminAction(supabase, {
+      eventType: "user.deleted",
+      actorId: user.id,
+      targetType: "user",
+      targetId: id,
+      summary: `User "${targetProfile.full_name || targetProfile.email}" deleted`,
+      detail: `${targetProfile.email} · was ${targetProfile.role}`,
+    });
+
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, {
+      route: "DELETE /api/admin/users/[id]",
+      requestId,
+    });
   }
 }

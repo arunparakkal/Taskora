@@ -1,30 +1,17 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { validateTaskDueDateForProject } from "@/lib/projects/date-utils";
 import { createTaskSchema, updateTaskStatusSchema } from "@/lib/validations/schemas";
 import { logActivityEvent } from "@/lib/activity/log-event";
 import { notifyTaskAssignedTelegram } from "@/lib/telegram/notify-task-assigned";
+import { requireApiRole, isApiAuthError } from "@/lib/auth/require-role";
+import { handleApiError, generateRequestId } from "@/lib/api/handle-error";
 
 export async function POST(request: Request) {
+  const requestId = generateRequestId();
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const auth = await requireApiRole(["admin"]);
+    if (isApiAuthError(auth)) return auth.error;
+    const { supabase, user } = auth;
 
     const body = await request.json();
     const parsed = createTaskSchema.safeParse(body);
@@ -73,7 +60,7 @@ export async function POST(request: Request) {
         project_id,
         assignee_id: assignee_id || null,
         priority,
-        due_date: due_date || null,
+        due_date,
         created_by: user.id,
       })
       .select()
@@ -110,21 +97,17 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true, task: data });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, { route: "POST /api/admin/tasks", requestId });
   }
 }
 
 export async function PATCH(request: Request) {
+  const requestId = generateRequestId();
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await requireApiRole(["admin", "team_lead", "member"]);
+    if (isApiAuthError(auth)) return auth.error;
+    const { supabase, user, role } = auth;
 
     const body = await request.json();
     const { taskId, ...rest } = body;
@@ -133,13 +116,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "taskId is required" }, { status: 400 });
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role === "admin" && rest.title) {
+    if (role === "admin" && rest.title) {
       const { error } = await supabase
         .from("tasks")
         .update(rest)
@@ -165,7 +142,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    if (profile?.role === "member") {
+    if (role === "member") {
       if (task.assignee_id !== user.id) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
@@ -222,7 +199,7 @@ export async function PATCH(request: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, { route: "PATCH /api/admin/tasks", requestId });
   }
 }

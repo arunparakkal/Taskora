@@ -12,15 +12,26 @@ import { StatCard, StatsGrid } from "@/components/admin/stat-card";
 import { TasksView } from "@/components/tasks/tasks-view";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getTasks, getProjects, getUsers } from "@/lib/data/queries";
+import { getTasks, getTasksPage, getProjects, getUsers } from "@/lib/data/queries";
+
+type TasksSearchParams = {
+  project?: string;
+  assignee?: string;
+  status?: string;
+  q?: string;
+  page?: string;
+};
 
 async function TasksList({
   searchParams,
 }: {
-  searchParams: Promise<{ project?: string; assignee?: string; status?: string }>;
+  searchParams: Promise<TasksSearchParams>;
 }) {
   const params = await searchParams;
-  const tasks = await getTasks({
+  const page = Math.max(1, Number(params.page) || 1);
+  const tasksPage = await getTasksPage({
+    page,
+    search: params.q,
     projectId: params.project,
     assigneeId: params.assignee,
     status: params.status,
@@ -28,11 +39,16 @@ async function TasksList({
 
   return (
     <TasksView
-      tasks={tasks}
+      tasks={tasksPage.items}
       role="admin"
       viewStorageKey="taskora-admin-tasks-view"
       emptyTitle="No tasks found"
       emptyDescription="Create a task or adjust your filters."
+      pagination={{
+        page: tasksPage.page,
+        pageSize: tasksPage.pageSize,
+        total: tasksPage.total,
+      }}
     />
   );
 }
@@ -86,7 +102,7 @@ async function TaskStats() {
 export default async function AdminTasksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ project?: string; assignee?: string; status?: string }>;
+  searchParams: Promise<TasksSearchParams>;
 }) {
   const [projects, users] = await Promise.all([getProjects(), getUsers()]);
 

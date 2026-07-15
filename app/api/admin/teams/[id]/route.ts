@@ -1,38 +1,18 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
-    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  }
-
-  return { supabase };
-}
+import { requireApiRole, isApiAuthError } from "@/lib/auth/require-role";
+import { logAdminAction } from "@/lib/audit/log-admin-action";
+import { handleApiError, generateRequestId } from "@/lib/api/handle-error";
 
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = generateRequestId();
   try {
     const { id: teamId } = await params;
-    const auth = await requireAdmin();
-    if ("error" in auth && auth.error) return auth.error;
-    const { supabase } = auth;
+    const auth = await requireApiRole(["admin"]);
+    if (isApiAuthError(auth)) return auth.error;
+    const { supabase, user } = auth;
 
     const { data: team, error: fetchError } = await supabase
       .from("teams")
@@ -53,8 +33,19 @@ export async function DELETE(
       return NextResponse.json({ error: deleteError.message }, { status: 400 });
     }
 
+    await logAdminAction(supabase, {
+      eventType: "team.deleted",
+      actorId: user.id,
+      targetType: "team",
+      targetId: team.id,
+      summary: `Team "${team.name}" deleted`,
+    });
+
     return NextResponse.json({ success: true, team: { id: team.id, name: team.name } });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, {
+      route: "DELETE /api/admin/teams/[id]",
+      requestId,
+    });
   }
 }

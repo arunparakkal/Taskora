@@ -10,10 +10,30 @@ import { PageShell } from "@/components/layout/dashboard-shell";
 import { CreateProjectDialog } from "@/components/admin/create-project-dialog";
 import { ProjectsList } from "@/components/admin/projects-list";
 import { StatCard, StatsGrid } from "@/components/admin/stat-card";
-import { getProjects, getTeams } from "@/lib/data/queries";
+import {
+  getProjects,
+  getProjectsPage,
+  getProjectStatusCounts,
+  getTeams,
+} from "@/lib/data/queries";
+import type { ProjectListTab } from "@/components/shared/project-list-tabs";
 
-export default async function AdminProjectsPage() {
-  const [projects, teams] = await Promise.all([getProjects(), getTeams()]);
+export default async function AdminProjectsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string; q?: string; page?: string }>;
+}) {
+  const params = await searchParams;
+  const tab: ProjectListTab = params.tab === "archived" ? "archived" : "active";
+  const search = params.q ?? "";
+  const page = Math.max(1, Number(params.page) || 1);
+
+  const [projects, teams, statusCounts, projectsPage] = await Promise.all([
+    getProjects(),
+    getTeams(),
+    getProjectStatusCounts(),
+    getProjectsPage({ page, search, archived: tab === "archived" }),
+  ]);
 
   const active = projects.filter((p) => p.status === "active").length;
   const paused = projects.filter((p) => p.status === "paused").length;
@@ -66,7 +86,13 @@ export default async function AdminProjectsPage() {
       }
     >
       <Suspense fallback={null}>
-        <ProjectsList projects={projects} />
+        <ProjectsList
+          tab={tab}
+          search={search}
+          activeCount={statusCounts.active}
+          archivedCount={statusCounts.archived}
+          projectsPage={projectsPage}
+        />
       </Suspense>
     </PageShell>
   );

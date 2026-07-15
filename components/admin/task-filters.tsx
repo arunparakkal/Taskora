@@ -27,6 +27,7 @@ export function TaskFilters({
     } else {
       params.delete(key);
     }
+    params.delete("page");
     router.push(`/admin/tasks?${params.toString()}`);
   }
 

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
 import { searchAdminEntities } from "@/lib/data/search";
+import { requireApiRole, isApiAuthError } from "@/lib/auth/require-role";
+import { handleApiError, generateRequestId } from "@/lib/api/handle-error";
 
 const searchSchema = z.object({
   q: z.string().trim().min(2, "Query must be at least 2 characters").max(100),
@@ -9,25 +10,10 @@ const searchSchema = z.object({
 });
 
 export async function GET(request: Request) {
+  const requestId = generateRequestId();
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const auth = await requireApiRole(["admin"]);
+    if (isApiAuthError(auth)) return auth.error;
 
     const { searchParams } = new URL(request.url);
     const parsed = searchSchema.safeParse({
@@ -45,7 +31,7 @@ export async function GET(request: Request) {
     const results = await searchAdminEntities(parsed.data.type, parsed.data.q);
 
     return NextResponse.json({ results });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, { route: "GET /api/admin/search", requestId });
   }
 }

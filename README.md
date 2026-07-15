@@ -16,6 +16,35 @@ Jira-like project management platform built with **Next.js 16** and **Supabase**
    ```
 5. `npm install && npm run dev` → [http://localhost:3000](http://localhost:3000)
 
+### Optional: AI Autofill for tasks
+
+Add Task dialogs include an **AI Fill** button (admin + team lead). Without a key it uses smart rules; with a key it calls a real LLM (fixes typos, expands short notes).
+
+**Free option (recommended):** create a key at [Groq Console](https://console.groq.com/keys), then in `.env.local`:
+
+```env
+GROQ_API_KEY=gsk_...
+```
+
+Restart `npm run dev`, then try: `create cartttttt page` → AI Fill (typos fixed + freest strong performer suggested).
+
+**How assignee suggestion is scored (100 max):**
+- Availability band (available / moderate / at capacity / overloaded) — up to 40
+- Low workload (open tasks + load points vs teammates) — up to 35
+- Performance score this month — up to 25
+
+The UI shows **Why AI chose them** under the assignee field.
+
+Also supported: `GEMINI_API_KEY` or `AI_API_KEY` / `OPENAI_API_KEY` (see `.env.example`).
+
+### Optional: floating AI chat assistant
+
+A chat bubble appears bottom-right on every page (same AI key as Autofill):
+- **Guests** — site guide (features, roles, how to get access)
+- **Logged-in users** — read-only assistant using your real tasks/workload/performance context
+
+Session-only (not stored in the database).
+
 See [`docs/PROJECT_PROGRESS.md`](docs/PROJECT_PROGRESS.md) for the full feature list and implementation notes.
 
 ---

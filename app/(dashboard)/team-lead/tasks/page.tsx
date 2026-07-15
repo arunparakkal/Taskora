@@ -3,15 +3,30 @@ import { PageShell } from "@/components/layout/dashboard-shell";
 import { StatCard, StatsGrid } from "@/components/admin/stat-card";
 import { TasksView } from "@/components/tasks/tasks-view";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
-import { getTasks, getTeamLeadTeamIds, getProjects } from "@/lib/data/queries";
+import {
+  getTasks,
+  getTasksPage,
+  getTeamLeadTeamIds,
+  getProjects,
+} from "@/lib/data/queries";
 
-export default async function TeamLeadTasksPage() {
+export default async function TeamLeadTasksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; page?: string }>;
+}) {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
+
   const teamIds = await getTeamLeadTeamIds(profile.id);
-  const allTasks = await getTasks();
-  const allProjects = await getProjects();
+  const [tasksPage, allTasks, allProjects] = await Promise.all([
+    getTasksPage({ page, search: params.q, teamIds }),
+    getTasks(),
+    getProjects(),
+  ]);
   const tasks = allTasks.filter((task) =>
     task.project?.team_id ? teamIds.includes(task.project.team_id) : false
   );
@@ -58,11 +73,16 @@ export default async function TeamLeadTasksPage() {
       }
     >
       <TasksView
-        tasks={tasks}
+        tasks={tasksPage.items}
         role="team_lead"
         viewStorageKey="taskora-team-lead-tasks-view"
         emptyTitle="No tasks"
         emptyDescription="Tasks assigned to your team will appear here."
+        pagination={{
+          page: tasksPage.page,
+          pageSize: tasksPage.pageSize,
+          total: tasksPage.total,
+        }}
       />
     </PageShell>
   );

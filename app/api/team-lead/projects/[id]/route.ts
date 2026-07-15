@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { userLeadsProjectTeam } from "@/lib/data/team-lead";
 import {
   teamLeadArchiveProjectSchema,
@@ -8,30 +7,16 @@ import {
 import { logActivityEvent } from "@/lib/activity/log-event";
 import { projectStatusDetail } from "@/lib/activity/build-feed";
 import { notifyProjectStatusTelegram } from "@/lib/telegram/notify-project-status";
+import { requireApiRole, isApiAuthError } from "@/lib/auth/require-role";
+import { handleApiError, generateRequestId } from "@/lib/api/handle-error";
 
 async function requireProjectLead(projectId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "team_lead" && profile?.role !== "admin") {
-    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  }
+  const auth = await requireApiRole(["team_lead", "admin"]);
+  if (isApiAuthError(auth)) return auth;
+  const { supabase, user, role } = auth;
 
   const canManage =
-    profile?.role === "admin" ||
-    (await userLeadsProjectTeam(user.id, projectId));
+    role === "admin" || (await userLeadsProjectTeam(user.id, projectId));
 
   if (!canManage) {
     return {
@@ -49,10 +34,11 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = generateRequestId();
   try {
     const { id: projectId } = await params;
     const auth = await requireProjectLead(projectId);
-    if ("error" in auth && auth.error) return auth.error;
+    if ("error" in auth) return auth.error;
     const { supabase, user } = auth;
 
     const body = await request.json();
@@ -153,7 +139,10 @@ export async function PATCH(
     }
 
     return NextResponse.json({ success: true, project: data });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, {
+      route: "PATCH /api/team-lead/projects/[id]",
+      requestId,
+    });
   }
 }

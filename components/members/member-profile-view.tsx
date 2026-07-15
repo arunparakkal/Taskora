@@ -52,7 +52,12 @@ export function MemberProfileView({
       <Card className="border-slate-200 shadow-sm">
         <CardContent className="p-6">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-            <EntityAvatar name={displayName} size="lg" className="h-16 w-16 text-lg" />
+            <EntityAvatar
+              name={displayName}
+              src={profile.avatar_url}
+              size="lg"
+              className="h-16 w-16 text-lg"
+            />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-3">
                 <h2 className="text-2xl font-bold tracking-tight text-slate-900">

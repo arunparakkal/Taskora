@@ -5,6 +5,7 @@ import {
   type NotificationWithDetails,
 } from "@/lib/data/notifications";
 import { enrichNotificationActors } from "@/lib/notifications/enrich-actors";
+import { handleApiError, generateRequestId } from "@/lib/api/handle-error";
 
 const NOTIFICATION_SELECT = `
   *,
@@ -13,6 +14,7 @@ const NOTIFICATION_SELECT = `
 `;
 
 export async function GET(request: Request) {
+  const requestId = generateRequestId();
   try {
     const supabase = await createClient();
     const {
@@ -52,12 +54,13 @@ export async function GET(request: Request) {
     );
 
     return NextResponse.json({ notifications, unreadCount });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, { route: "GET /api/notifications", requestId });
   }
 }
 
 export async function PATCH(request: Request) {
+  const requestId = generateRequestId();
   try {
     const supabase = await createClient();
     const {
@@ -98,7 +101,7 @@ export async function PATCH(request: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, { route: "PATCH /api/notifications", requestId });
   }
 }

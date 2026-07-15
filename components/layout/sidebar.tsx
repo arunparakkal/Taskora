@@ -12,6 +12,7 @@ import {
   History,
   UserCircle,
   Flame,
+  ShieldCheck,
 } from "lucide-react";
 import type { Profile, AppRole } from "@/types/database";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ const adminNav: NavItem[] = [
   { label: "Projects", href: "/admin/projects", icon: FolderKanban },
   { label: "Tasks", href: "/admin/tasks", icon: CheckSquare },
   { label: "Activity", href: "/admin/activity", icon: History },
+  { label: "Audit Log", href: "/admin/audit-log", icon: ShieldCheck },
   { label: "Performance", href: "/admin/performance", icon: Gauge },
   { label: "My Profile", href: "/admin/profile", icon: UserCircle },
 ];

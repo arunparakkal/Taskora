@@ -1,39 +1,18 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { resolveHabitDays } from "@/lib/data/habits";
 import { updateHabitSchema } from "@/lib/validations/schemas";
-
-async function requireMember() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || profile.role !== "member") {
-    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  }
-
-  return { supabase, user };
-}
+import { requireApiRole, isApiAuthError } from "@/lib/auth/require-role";
+import { handleApiError, generateRequestId } from "@/lib/api/handle-error";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = generateRequestId();
   try {
-    const auth = await requireMember();
-    if ("error" in auth && auth.error) return auth.error;
-    const { supabase, user } = auth as { supabase: Awaited<ReturnType<typeof createClient>>; user: { id: string } };
+    const auth = await requireApiRole(["member"]);
+    if (isApiAuthError(auth)) return auth.error;
+    const { supabase, user } = auth;
     const { id } = await params;
 
     const body = await request.json();
@@ -71,8 +50,11 @@ export async function PATCH(
     }
 
     return NextResponse.json({ success: true, habit: data });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, {
+      route: "PATCH /api/member/habits/[id]",
+      requestId,
+    });
   }
 }
 
@@ -80,10 +62,11 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = generateRequestId();
   try {
-    const auth = await requireMember();
-    if ("error" in auth && auth.error) return auth.error;
-    const { supabase, user } = auth as { supabase: Awaited<ReturnType<typeof createClient>>; user: { id: string } };
+    const auth = await requireApiRole(["member"]);
+    if (isApiAuthError(auth)) return auth.error;
+    const { supabase, user } = auth;
     const { id } = await params;
 
     const { error } = await supabase
@@ -97,7 +80,10 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, {
+      route: "DELETE /api/member/habits/[id]",
+      requestId,
+    });
   }
 }

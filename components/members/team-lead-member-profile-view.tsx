@@ -112,6 +112,7 @@ export function TeamLeadMemberProfileView({
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
               <EntityAvatar
                 name={displayName}
+                src={profile.avatar_url}
                 size="lg"
                 className="h-16 w-16 text-lg"
               />

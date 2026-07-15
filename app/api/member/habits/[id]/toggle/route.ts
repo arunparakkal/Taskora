@@ -1,39 +1,18 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { toDateKey } from "@/lib/habits/date-utils";
 import { usesProgressCounter } from "@/lib/habits/constants";
-
-async function requireMember() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || profile.role !== "member") {
-    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  }
-
-  return { supabase, user };
-}
+import { requireApiRole, isApiAuthError } from "@/lib/auth/require-role";
+import { handleApiError, generateRequestId } from "@/lib/api/handle-error";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = generateRequestId();
   try {
-    const auth = await requireMember();
-    if ("error" in auth && auth.error) return auth.error;
-    const { supabase, user } = auth as { supabase: Awaited<ReturnType<typeof createClient>>; user: { id: string } };
+    const auth = await requireApiRole(["member"]);
+    if (isApiAuthError(auth)) return auth.error;
+    const { supabase, user } = auth;
     const { id: habitId } = await params;
 
     const { data: habit, error: habitError } = await supabase
@@ -137,7 +116,10 @@ export async function POST(
     }
 
     return NextResponse.json({ success: true, completed: true, completion: data });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, {
+      route: "POST /api/member/habits/[id]/toggle",
+      requestId,
+    });
   }
 }

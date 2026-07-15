@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Calendar, CheckSquare, ChevronRight, Search } from "lucide-react";
 import { EmptyState } from "@/components/layout/dashboard-shell";
 import { PriorityBadge, StatusBadge } from "@/components/shared/badges";
 import { DataTableCard } from "@/components/shared/data-table-card";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
+import { LinkPagination } from "@/components/shared/link-pagination";
+import { SearchParamInput } from "@/components/shared/search-param-input";
 import {
   ViewModeToggle,
   type ViewMode,
@@ -66,6 +68,12 @@ const BOARD_COLUMNS: TaskStatus[] = [
   "done",
 ];
 
+export interface TasksViewPagination {
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
 export function TasksView({
   tasks,
   role,
@@ -73,6 +81,7 @@ export function TasksView({
   searchPlaceholder = "Search tasks by title, project, assignee, or status...",
   emptyTitle = "No tasks found",
   emptyDescription = "Tasks will appear here once they are created or assigned.",
+  pagination,
 }: {
   tasks: TaskWithDetails[];
   role: TaskCardRole;
@@ -80,9 +89,20 @@ export function TasksView({
   searchPlaceholder?: string;
   emptyTitle?: string;
   emptyDescription?: string;
+  /**
+   * When provided, `tasks` is treated as a single server-fetched page (search
+   * and paging happen via URL params + a server re-fetch) instead of a
+   * fully-loaded array filtered client-side. Board/card views then only show
+   * the current page's tasks — an accepted trade-off for large datasets.
+   */
+  pagination?: TasksViewPagination;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+  const serverPaginated = Boolean(pagination);
+  const urlQuery = searchParams.get("q") ?? "";
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [items, setItems] = useState(tasks);
@@ -105,11 +125,20 @@ export function TasksView({
     localStorage.setItem(viewStorageKey, mode);
   }
 
-  const filteredTasks = useMemo(
-    () => items.filter((task) => matchesTask(task, query)),
-    [items, query]
-  );
+  function buildPageHref(targetPage: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (targetPage > 1) params.set("page", String(targetPage));
+    else params.delete("page");
+    const qs = params.toString();
+    return qs ? `${pathname}?${qs}` : pathname;
+  }
 
+  const filteredTasks = useMemo(() => {
+    if (serverPaginated) return items;
+    return items.filter((task) => matchesTask(task, query));
+  }, [items, query, serverPaginated]);
+
+  const activeSearchTerm = serverPaginated ? urlQuery : query;
   const showAssignee = role !== "member";
 
   async function persistStatusChange(
@@ -199,7 +228,7 @@ export function TasksView({
     void persistStatusChange(task, nextStatus);
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && !activeSearchTerm) {
     return (
       <EmptyState
         icon={CheckSquare}
@@ -211,18 +240,25 @@ export function TasksView({
 
   return (
     <div className="space-y-6">
-      <Card className="border-slate-200 p-4 shadow-sm">
+      <Card className="border-slate-200 p-4 shadow-sm dark:border-slate-800">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative min-w-0 flex-1 sm:max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+          {serverPaginated ? (
+            <SearchParamInput
+              className="relative min-w-0 flex-1 sm:max-w-md"
               placeholder={searchPlaceholder}
-              className="h-10 border-slate-200 bg-slate-50 pl-10"
             />
-          </div>
+          ) : (
+            <div className="relative min-w-0 flex-1 sm:max-w-md">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={searchPlaceholder}
+                className="h-10 border-slate-200 bg-slate-50 pl-10"
+              />
+            </div>
+          )}
           <ViewModeToggle value={viewMode} onChange={handleViewChange} />
         </div>
       </Card>
@@ -231,7 +267,7 @@ export function TasksView({
         <EmptyState
           icon={Search}
           title="No tasks found"
-          description={`No tasks match "${query}". Try a different search.`}
+          description={`No tasks match "${activeSearchTerm}". Try a different search.`}
         />
       ) : viewMode === "card" ? (
         <div>
@@ -331,7 +367,21 @@ export function TasksView({
           </div>
         </div>
       ) : (
-        <DataTableCard total={filteredTasks.length} scrollable={false}>
+        <DataTableCard
+          total={pagination?.total ?? filteredTasks.length}
+          scrollable={false}
+          pagination={
+            pagination ? (
+              <LinkPagination
+                page={pagination.page}
+                pageSize={pagination.pageSize}
+                total={pagination.total}
+                itemLabel="task"
+                buildHref={buildPageHref}
+              />
+            ) : undefined
+          }
+        >
           <Table containerClassName="overflow-visible" className="table-fixed">
             <TableHeader>
               <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">

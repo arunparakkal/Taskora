@@ -116,16 +116,10 @@ export const createTaskSchema = z.object({
     message: "Select a priority",
   }),
   due_date: z
-    .string()
-    .optional()
-    .or(z.literal(""))
-    .refine(
-      (val) => {
-        if (!val) return true;
-        return /^\d{4}-\d{2}-\d{2}$/.test(val);
-      },
-      { message: "Enter a valid due date" }
-    ),
+    .string({ message: "Due date is required" })
+    .trim()
+    .min(1, "Due date is required")
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid due date"),
 });
 
 export const updateTaskStatusSchema = z.object({
@@ -193,6 +187,60 @@ export type CreateTeamInput = z.infer<typeof createTeamSchema>;
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type ReviewTaskInput = z.infer<typeof reviewTaskSchema>;
+
+export const aiAutofillTaskSchema = z.object({
+  text: z
+    .string()
+    .trim()
+    .min(3, "Type a short task note first")
+    .max(500, "Keep the note under 500 characters"),
+  project_start_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .or(z.literal("")),
+  project_due_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .or(z.literal("")),
+  assignees: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string().trim().min(1).max(120),
+        email: z.string().email().optional().or(z.literal("")).nullable(),
+        open_tasks: z.number().int().min(0).max(10000).optional(),
+        load_points: z.number().min(0).max(100000).optional(),
+        workload_status: z
+          .enum(["available", "moderate", "at_capacity", "overloaded"])
+          .optional(),
+        performance_score: z.number().min(0).max(100).nullable().optional(),
+      })
+    )
+    .max(50)
+    .optional(),
+});
+
+export type AiAutofillTaskInput = z.infer<typeof aiAutofillTaskSchema>;
+
+export const chatRequestSchema = z.object({
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z
+          .string()
+          .trim()
+          .min(1, "Message cannot be empty")
+          .max(2000, "Keep each message under 2000 characters"),
+      })
+    )
+    .min(1, "Send at least one message")
+    .max(20, "Conversation is too long — start a new chat"),
+});
+
+export type ChatRequestInput = z.infer<typeof chatRequestSchema>;
 
 const habitFrequencySchema = z.enum(["daily", "weekdays", "weekly", "custom"], {
   message: "Select a valid frequency",

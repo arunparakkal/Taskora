@@ -79,9 +79,9 @@ export function NotificationsList({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
-        <p className="text-sm text-slate-500">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           {unreadCount > 0
             ? `${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`
             : "You're all caught up"}
@@ -90,7 +90,7 @@ export function NotificationsList({
           <button
             type="button"
             onClick={markAllRead}
-            className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700"
+            className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
           >
             <CheckCheck className="h-3.5 w-3.5" />
             Mark all as read
@@ -99,12 +99,12 @@ export function NotificationsList({
       </div>
 
       {loading && notifications.length === 0 ? (
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
-          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+        <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500 dark:text-slate-400">
+          <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
           Loading notifications...
         </div>
       ) : (
-        <ul className="divide-y divide-slate-50">
+        <ul className="divide-y divide-slate-50 dark:divide-slate-800">
           {notifications.map((n) => (
             <NotificationItem
               key={n.id}

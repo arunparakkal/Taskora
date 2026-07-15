@@ -38,6 +38,7 @@ import {
   RequiredLabel,
 } from "@/components/shared/form-dialog-parts";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
+import { AiAutofillButton } from "@/components/tasks/ai-autofill-button";
 import { createTaskSchema, type CreateTaskInput } from "@/lib/validations/schemas";
 import { projectPeriodLabel } from "@/lib/projects/date-utils";
 import type { Profile } from "@/types/database";
@@ -53,6 +54,9 @@ export function CreateTeamLeadTaskDialog({
   projectOpenForTasks = true,
   teamMembers,
   memberWorkloads = {},
+  memberPerformanceScores = {},
+  /** Current team lead — never shown as an assignable member / AI pick. */
+  excludeUserId,
 }: {
   projectId: string;
   projectName: string;
@@ -61,6 +65,9 @@ export function CreateTeamLeadTaskDialog({
   projectOpenForTasks?: boolean;
   teamMembers: Profile[];
   memberWorkloads?: Record<string, MemberWorkload>;
+  /** Overall performance 0–100 for the current month (best-effort). */
+  memberPerformanceScores?: Record<string, number>;
+  excludeUserId?: string;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -69,6 +76,7 @@ export function CreateTeamLeadTaskDialog({
   const [assigneeValue, setAssigneeValue] = useState<string>("none");
   const [priorityValue, setPriorityValue] =
     useState<CreateTaskInput["priority"]>("medium");
+  const [assigneeReason, setAssigneeReason] = useState("");
 
   const {
     register,
@@ -83,12 +91,23 @@ export function CreateTeamLeadTaskDialog({
       project_id: projectId,
       priority: "medium",
     },
-    mode: "onBlur",
+    mode: "onSubmit",
   });
 
   const description = watch("description") ?? "";
+  const titleValue = watch("title") ?? "";
 
-  const sortedMembers = sortMembersByAvailability(teamMembers, memberWorkloads);
+  // Team leads assign work to members — never to themselves / other leads.
+  const assignableMembers = teamMembers.filter(
+    (m) =>
+      m.role === "member" &&
+      (!excludeUserId || m.id !== excludeUserId)
+  );
+
+  const sortedMembers = sortMembersByAvailability(
+    assignableMembers,
+    memberWorkloads
+  );
   const suggestedMember = sortedMembers.find(
     (m) => memberWorkloads[m.id]?.status === "available"
   );
@@ -105,6 +124,7 @@ export function CreateTeamLeadTaskDialog({
     });
     setAssigneeValue("none");
     setPriorityValue("medium");
+    setAssigneeReason("");
   }
 
   async function onSubmit(data: CreateTaskInput) {
@@ -148,6 +168,7 @@ export function CreateTeamLeadTaskDialog({
           });
           setAssigneeValue("none");
           setPriorityValue("medium");
+          setAssigneeReason("");
         }
         setOpen(nextOpen);
       }}
@@ -181,7 +202,7 @@ export function CreateTeamLeadTaskDialog({
             This project is outside its active period. Tasks can only be added between
             the project start and due dates.
           </p>
-        ) : teamMembers.length === 0 ? (
+        ) : assignableMembers.length === 0 ? (
           <p className="px-6 py-4 text-sm text-slate-500">
             No team members found. Ask an admin to add members to your team first.
           </p>
@@ -193,15 +214,57 @@ export function CreateTeamLeadTaskDialog({
           >
             <div className="min-h-0 flex-1 space-y-4 overflow-x-hidden overflow-y-auto px-6 py-4">
               <div className="space-y-2">
-                <RequiredLabel htmlFor="tl_task_title">Title</RequiredLabel>
+                <div className="flex items-center justify-between gap-2">
+                  <RequiredLabel htmlFor="tl_task_title">Title</RequiredLabel>
+                  <AiAutofillButton
+                    text={titleValue}
+                    projectStartDate={projectStartDate}
+                    projectDueDate={projectDueDate}
+                    assignees={assignableMembers.map((m) => {
+                      const workload = memberWorkloads[m.id];
+                      return {
+                        id: m.id,
+                        name: m.full_name || m.email || "Unknown",
+                        email: m.email,
+                        open_tasks: workload?.openTasks ?? 0,
+                        load_points: workload?.loadPoints ?? 0,
+                        workload_status: workload?.status,
+                        performance_score:
+                          memberPerformanceScores[m.id] ?? null,
+                      };
+                    })}
+                    onFilled={(fields) => {
+                      setValue("title", fields.title, { shouldValidate: true });
+                      setValue("description", fields.description ?? "", {
+                        shouldValidate: true,
+                      });
+                      setValue("priority", fields.priority, {
+                        shouldValidate: true,
+                      });
+                      setPriorityValue(fields.priority);
+                      setValue("due_date", fields.due_date ?? "", {
+                        shouldValidate: true,
+                      });
+                      const nextAssignee = fields.assignee_id || "";
+                      setValue("assignee_id", nextAssignee, {
+                        shouldValidate: true,
+                      });
+                      setAssigneeValue(nextAssignee || "none");
+                      setAssigneeReason(fields.assignee_reason ?? "");
+                    }}
+                  />
+                </div>
                 <IconInput
                   id="tl_task_title"
                   icon={CheckSquare}
                   {...register("title")}
-                  placeholder="Implement feature..."
+                  placeholder="create cart page… then click AI Fill"
                   className={fieldClass(!!errors.title)}
                   aria-invalid={!!errors.title}
                 />
+                <p className="text-xs text-slate-400">
+                  Real AI fixes spelling, expands the task, and assigns the freest strong performer.
+                </p>
                 <FormFieldError message={errors.title?.message} />
               </div>
 
@@ -234,6 +297,7 @@ export function CreateTeamLeadTaskDialog({
                       setValue("assignee_id", v === "none" ? "" : v, {
                         shouldValidate: true,
                       });
+                      setAssigneeReason("");
                     }}
                   >
                     <SelectTrigger>
@@ -264,6 +328,12 @@ export function CreateTeamLeadTaskDialog({
                 <p className="text-xs text-slate-400">
                   Sorted by load — members with lower load appear first
                 </p>
+                {assigneeReason && (
+                  <div className="rounded-lg border border-violet-200 bg-violet-50/70 px-3 py-2 text-xs text-violet-900">
+                    <span className="font-medium">Why AI chose them: </span>
+                    {assigneeReason}
+                  </div>
+                )}
                 <FormFieldError message={errors.assignee_id?.message} />
               </div>
 
@@ -294,9 +364,7 @@ export function CreateTeamLeadTaskDialog({
                 </div>
 
                 <div className="min-w-0 space-y-2">
-                  <RequiredLabel htmlFor="tl_due_date" optional>
-                    Due Date
-                  </RequiredLabel>
+                  <RequiredLabel htmlFor="tl_due_date">Due Date</RequiredLabel>
                   <IconInput
                     id="tl_due_date"
                     icon={Calendar}

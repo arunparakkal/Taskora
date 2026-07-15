@@ -1,5 +1,4 @@
-"use client";
-
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export type ProjectListTab = "active" | "archived";
@@ -7,37 +6,60 @@ export type ProjectListTab = "active" | "archived";
 export function ProjectListTabs({
   tab,
   onTabChange,
+  hrefFor,
   activeCount,
   archivedCount,
 }: {
   tab: ProjectListTab;
-  onTabChange: (tab: ProjectListTab) => void;
+  /** Client-state mode (e.g. team-lead's projects manager). */
+  onTabChange?: (tab: ProjectListTab) => void;
+  /** Server/URL-driven mode — renders `<Link>`s instead of buttons. */
+  hrefFor?: (tab: ProjectListTab) => string;
   activeCount: number;
   archivedCount: number;
 }) {
+  const tabs = [
+    { id: "active" as const, label: "Active", count: activeCount },
+    { id: "archived" as const, label: "Archived", count: archivedCount },
+  ];
+
   return (
     <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-900/50">
-      {(
-        [
-          { id: "active" as const, label: "Active", count: activeCount },
-          { id: "archived" as const, label: "Archived", count: archivedCount },
-        ] as const
-      ).map(({ id, label, count }) => (
-        <button
-          key={id}
-          type="button"
-          onClick={() => onTabChange(id)}
-          className={cn(
-            "rounded-md px-4 py-2 text-sm font-medium transition-all duration-200",
-            tab === id
-              ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100"
-              : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-          )}
-        >
-          {label}
-          <span className="ml-1.5 tabular-nums text-slate-400 dark:text-slate-500">({count})</span>
-        </button>
-      ))}
+      {tabs.map(({ id, label, count }) => {
+        const className = cn(
+          "rounded-md px-4 py-2 text-sm font-medium transition-all duration-200",
+          tab === id
+            ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100"
+            : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+        );
+        const content = (
+          <>
+            {label}
+            <span className="ml-1.5 tabular-nums text-slate-400 dark:text-slate-500">
+              ({count})
+            </span>
+          </>
+        );
+
+        if (hrefFor) {
+          return (
+            <Link key={id} href={hrefFor(id)} className={className}>
+              {content}
+            </Link>
+          );
+        }
+
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => onTabChange?.(id)}
+            className={className}
+          >
+            {content}
+          </button>
+        );
+      })}
     </div>
   );
 }

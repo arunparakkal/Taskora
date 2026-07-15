@@ -113,7 +113,8 @@ export type NotificationType =
   | "task_reopened"
   | "task_submitted"
   | "task_completed"
-  | "task_created";
+  | "task_created"
+  | "task_started";
 
 export interface AppNotification {
   id: string;
@@ -142,6 +143,29 @@ export interface PerformanceSnapshot {
   overall: number;
   metadata: Record<string, unknown> | null;
   created_at: string;
+}
+
+export type AdminAuditEventType =
+  | "user.created"
+  | "user.updated"
+  | "user.role_changed"
+  | "user.deleted"
+  | "team.deleted";
+
+export interface AdminAuditLog {
+  id: string;
+  event_type: AdminAuditEventType;
+  actor_id: string | null;
+  target_type: string | null;
+  target_id: string | null;
+  summary: string;
+  detail: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface AdminAuditLogWithActor extends AdminAuditLog {
+  actor?: Pick<Profile, "id" | "full_name" | "email"> | null;
 }
 
 export interface TeamWithDetails extends Team {
